@@ -532,8 +532,174 @@ body {
   .admin-layout {
     grid-template-columns: 1fr;
     height: auto;
+    padding: 1rem 0.75rem;
+    gap: 1rem;
   }
+  
+  .admin-sidebar {
+    height: auto;
+    max-height: 400px;
+  }
+
+  .admin-map-container {
+    height: 420px;
+    min-height: 380px;
+  }
+
   .metrics-bar {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .admin-page-body {
+    overflow-y: auto !important;
+  }
+}
+
+/* Mobile Devices (< 768px) */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .brand span {
+    font-size: 1.1rem;
+  }
+
+  .brand-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .auth-container {
+    margin: 1.5rem auto;
+    padding: 0 0.75rem;
+  }
+
+  .glass-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+  }
+
+  /* Prevent auto-zoom on iOS inputs */
+  .form-input {
+    font-size: 16px;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .user-dashboard-container {
+    padding: 0 0.75rem !important;
+    margin: 1rem auto !important;
+    gap: 1rem !important;
+  }
+
+  .user-action-buttons {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .user-action-buttons .btn {
+    width: 100%;
+  }
+
+  .location-url-box {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .location-url-box .location-url-input {
+    width: 100%;
+    word-break: break-all;
+    font-size: 0.8rem;
+    padding: 0.35rem;
+  }
+
+  .location-url-box .btn {
+    width: 100%;
+  }
+
+  /* Stats Grid: 2 clean columns */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .stat-box {
+    padding: 0.75rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+
+  /* Interactive Map on mobile */
+  .map-container {
+    height: 340px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Public Tracking Page Mobile */
+  .track-header {
+    padding: 0.75rem 1rem !important;
+  }
+
+  #trackMap {
+    height: calc(100vh - 240px) !important;
+  }
+
+  .bottom-info-bar {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .bottom-info-bar > div {
+    font-size: 0.85rem;
+  }
+
+  /* Toasts */
+  .toast-container {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+  }
+
+  .toast {
+    width: 100%;
+  }
+}
+
+/* Extra small mobile (< 480px) */
+@media (max-width: 480px) {
+  #otpCode {
+    font-size: 1.35rem !important;
+    letter-spacing: 6px !important;
+  }
+
+  .metrics-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .metric-card {
+    padding: 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .metric-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .metric-card div div:last-child {
+    font-size: 1.1rem !important;
   }
 }
