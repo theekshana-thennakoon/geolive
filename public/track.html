@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live GPS Tracker - Public Viewer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      overflow-x: hidden;
+    }
+    .track-header {
+      background: rgba(11, 15, 25, 0.9);
+      backdrop-filter: var(--backdrop);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    #trackMap {
+      width: 100%;
+      height: calc(100vh - 170px);
+    }
+    .bottom-info-bar {
+      background: rgba(11, 15, 25, 0.95);
+      border-top: 1px solid var(--border-color);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="track-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <div class="brand-icon">
+        <i class="fa-solid fa-satellite-dish" style="color: white; font-size: 1.1rem;"></i>
+      </div>
+      <div>
+        <h1 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;" id="trackUserName">
+          <span>Loading User...</span>
+        </h1>
+        <div style="font-size: 0.8rem; color: var(--text-muted);" id="trackUserPhone">--</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <span class="badge badge-offline" id="trackStatusBadge">
+        <span class="pulse-dot offline" id="trackStatusDot"></span>
+        <span id="trackStatusText">Connecting...</span>
+      </span>
+      <a id="gmapsExternalBtn" href="#" target="_blank" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-map-location-dot"></i> Open Google Maps
+      </a>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div id="trackMap"></div>
+
+  <!-- Bottom Details Bar -->
+  <div class="bottom-info-bar">
+    <div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Latitude:</span>
+      <strong id="trackLat" style="margin-left: 0.35rem; color: #38bdf8;">--</strong>
+    </div>
+    <div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Longitude:</span>
+      <strong id="trackLng" style="margin-left: 0.35rem; color: #38bdf8;">--</strong>
+    </div>
+    <div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Accuracy:</span>
+      <strong id="trackAcc" style="margin-left: 0.35rem;">--</strong>
+    </div>
+    <div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Speed:</span>
+      <strong id="trackSpeed" style="margin-left: 0.35rem;">--</strong>
+    </div>
+    <div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Last Seen:</span>
+      <strong id="trackTime" style="margin-left: 0.35rem;">--</strong>
+    </div>
+  </div>
+
+  <!-- Socket.IO & Leaflet JS -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map, marker, circle, polyline;
+    let socket;
+    const pathCoords = [];
+    const params = new URLSearchParams(window.location.search);
+    const targetUserId = params.get('id') || params.get('user');
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!targetUserId) {
+        document.body.innerHTML = `
+          <div style="text-align: center; margin-top: 5rem; font-family: sans-serif; color: white;">
+            <h2>Invalid Tracking Link</h2>
+            <p>No user identifier was provided in the URL.</p>
+            <a href="/" class="btn btn-primary" style="margin-top: 1rem; display: inline-block;">Go Home</a>
+          </div>
+        `;
+        return;
+      }
+
+      initMap();
+      initSocket();
+      loadUserLocation();
+      loadHistory();
+    });
+
+    function initMap() {
+      // 100% Free OpenStreetMap tile layer (No API key required)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      polyline = L.polyline([], {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.85
+      }).addTo(map);
+    }
+
+    function initSocket() {
+      socket = io();
+      socket.on('connect', () => {
+        socket.emit('join:track', targetUserId);
+      });
+
+      socket.on('location:updated', (data) => {
+        if (data.id === targetUserId) {
+          updateUI(data, true);
+        }
+      });
+    }
+
+    async function loadUserLocation() {
+      try {
+        const res = await fetch(`/api/user/${targetUserId}`);
+        const data = await res.json();
+        if (data.success && data.user) {
+          document.getElementById('trackUserName').innerText = data.user.name;
+          document.getElementById('trackUserPhone').innerText = `Phone: ${data.user.phone}`;
+          updateUI(data.user, false);
+        } else {
+          document.getElementById('trackUserName').innerText = 'User Not Found';
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(`/api/user/${targetUserId}/history`);
+        const data = await res.json();
+        if (data.success && data.history) {
+          data.history.forEach(item => {
+            if (item.latitude && item.longitude) {
+              pathCoords.push([item.latitude, item.longitude]);
+            }
+          });
+          polyline.setLatLngs(pathCoords);
+        }
+      } catch (err) {}
+    }
+
+    function updateUI(user, fromSocket = false) {
+      const isOnline = user.isOnline || (user.lastSeen && (Date.now() - new Date(user.lastSeen).getTime()) < 60000);
+      
+      const badge = document.getElementById('trackStatusBadge');
+      const dot = document.getElementById('trackStatusDot');
+      const text = document.getElementById('trackStatusText');
+
+      if (isOnline) {
+        badge.className = 'badge badge-online';
+        dot.className = 'pulse-dot online';
+        text.innerText = 'Live Online';
+      } else {
+        badge.className = 'badge badge-offline';
+        dot.className = 'pulse-dot offline';
+        text.innerText = 'Offline (Last Known)';
+      }
+
+      if (!user.location || !user.location.latitude) {
+        document.getElementById('trackTime').innerText = 'No GPS fix yet';
+        return;
+      }
+
+      const lat = parseFloat(user.location.latitude);
+      const lng = parseFloat(user.location.longitude);
+      const latLng = [lat, lng];
+
+      document.getElementById('trackLat').innerText = lat.toFixed(6);
+      document.getElementById('trackLng').innerText = lng.toFixed(6);
+      document.getElementById('trackAcc').innerText = user.location.accuracy ? `±${Math.round(user.location.accuracy)} m` : 'N/A';
+      document.getElementById('trackSpeed').innerText = user.location.speed ? `${(user.location.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
+      document.getElementById('trackTime').innerText = new Date(user.location.updatedAt || user.lastSeen).toLocaleTimeString();
+      document.getElementById('gmapsExternalBtn').href = `https://www.google.com/maps?q=${lat},${lng}`;
+
+      pathCoords.push(latLng);
+      polyline.setLatLngs(pathCoords);
+
+      const customIcon = L.divIcon({
+        className: 'custom-user-marker',
+        html: `
+          <div class="marker-pin ${isOnline ? 'online' : 'offline'}"></div>
+          <div style="font-weight:700; background:rgba(0,0,0,0.85); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; white-space:nowrap; position:absolute; top:20px;">
+            ${user.name}
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32]
+      });
+
+      if (!marker) {
+        marker = L.marker(latLng, { icon: customIcon }).addTo(map);
+        map.setView(latLng, 16);
+      } else {
+        marker.setLatLng(latLng);
+        marker.setIcon(customIcon);
+        if (fromSocket) {
+          map.panTo(latLng);
+        }
+      }
+
+      if (user.location.accuracy) {
+        if (!circle) {
+          circle = L.circle(latLng, {
+            radius: user.location.accuracy,
+            color: '#10b981',
+            fillColor: '#10b981',
+            fillOpacity: 0.15,
+            weight: 1
+          }).addTo(map);
+        } else {
+          circle.setLatLng(latLng);
+          circle.setRadius(user.location.accuracy);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

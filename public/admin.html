@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Live Fleet Tracking</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    .leaflet-popup-content-wrapper {
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip {
+      background: #111827;
+    }
+  </style>
+</head>
+<body style="overflow: hidden;">
+  <!-- Admin Navbar -->
+  <nav class="navbar">
+    <a href="/admin" class="brand">
+      <div class="brand-icon" style="background: linear-gradient(135deg, #8b5cf6, #3b82f6);">
+        <i class="fa-solid fa-satellite-dish" style="color: white; font-size: 1.2rem;"></i>
+      </div>
+      <span>GeoLive <span style="color: #60a5fa; font-weight: 400;">Fleet Command</span></span>
+    </a>
+    
+    <div style="display: flex; align-items: center; gap: 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+        <span class="pulse-dot online" id="socketStatusDot"></span>
+        <span id="socketStatusText">Live Socket Connected</span>
+      </div>
+      <button onclick="logoutAdmin()" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- Admin Main Layout -->
+  <div class="admin-layout">
+    
+    <!-- Left Sidebar: User Directory -->
+    <div class="glass-card admin-sidebar">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 700;">Registered Users</h2>
+        <button class="btn btn-outline btn-sm" onclick="loadUsers()" title="Refresh List">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <!-- Search Filter -->
+      <div style="position: relative; margin-bottom: 0.5rem;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 0.85rem; color: var(--text-dim);"></i>
+        <input type="text" id="userSearch" class="form-input" style="padding-left: 2.5rem;" placeholder="Search by name or phone..." oninput="filterUsers()">
+      </div>
+
+      <!-- Users List -->
+      <div class="admin-users-list" id="usersListContainer">
+        <div style="text-align: center; padding: 2rem 0; color: var(--text-muted);">
+          <i class="fa-solid fa-spinner fa-spin"></i> Loading users...
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side: Map & Metrics -->
+    <div class="admin-map-area">
+      
+      <!-- Metrics Bar -->
+      <div class="metrics-bar">
+        <div class="metric-card">
+          <div class="metric-icon" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa;">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Users</div>
+            <div style="font-size: 1.35rem; font-weight: 800;" id="metricTotal">0</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
+            <i class="fa-solid fa-signal"></i>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Live Online</div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #34d399;" id="metricOnline">0</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Offline (Last Seen)</div>
+            <div style="font-size: 1.35rem; font-weight: 800;" id="metricOffline">0</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa;">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">GPS Positions</div>
+            <div style="font-size: 1.35rem; font-weight: 800;" id="metricWithLocation">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Toolbar & Map -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 0.5rem;">
+        <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted);">
+          <i class="fa-solid fa-map-location-dot"></i> Live Fleet Overview (Real-Time GPS)
+        </span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline btn-sm" onclick="fitAllMarkers()">
+            <i class="fa-solid fa-expand"></i> View All Users
+          </button>
+        </div>
+      </div>
+
+      <div id="adminMap" class="admin-map-container"></div>
+
+    </div>
+
+  </div>
+
+  <!-- Admin Login Modal (if unauthorized) -->
+  <div id="adminLoginModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="glass-card" style="width: 400px; max-width: 90%;">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div class="brand-icon" style="margin: 0 auto 0.75rem auto; background: linear-gradient(135deg, #8b5cf6, #3b82f6);">
+          <i class="fa-solid fa-shield-halved" style="color: white; font-size: 1.25rem;"></i>
+        </div>
+        <h3 style="font-size: 1.35rem; font-weight: 700;">Admin Authorization</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Enter admin credentials to access fleet command</p>
+      </div>
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="adminUser" class="form-input" value="admin" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="adminPass" class="form-input" placeholder="admin123" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <i class="fa-solid fa-lock-open"></i> Access Admin Console
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <!-- Socket.IO & Leaflet JS -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

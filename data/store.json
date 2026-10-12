@@ -1,0 +1,221 @@
+{
+  "users": [
+    {
+      "id": "admin-1",
+      "name": "System Administrator",
+      "phone": "admin",
+      "passwordHash": "$2b$10$HSO7GjEaXXtpOy41WuYVe.VX.HymRIYlSE1QXFG6DZeCIui2Gp2Nm",
+      "role": "admin",
+      "createdAt": "2026-10-11T18:14:00.234Z",
+      "lastSeen": "2026-10-11T18:19:37.104Z",
+      "location": {
+        "latitude": 8.355524,
+        "longitude": 80.502762,
+        "accuracy": 56,
+        "speed": null,
+        "heading": null,
+        "updatedAt": "2026-10-11T18:19:37.104Z"
+      }
+    },
+    {
+      "id": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "name": "Theekshana Thennakoon",
+      "email": "theekshana.thennakoon.intern@gmail.com",
+      "phone": "0789651168",
+      "passwordHash": "$2b$10$yC2OfQHa1H.jhSjdEHevTerZ8N3BuAr6BHGQIMpd.xGdLDCd6qGCi",
+      "role": "user",
+      "createdAt": "2026-10-12T04:55:15.021Z",
+      "lastSeen": "2026-10-12T05:02:38.391Z",
+      "location": {
+        "latitude": 8.355539839393641,
+        "longitude": 80.50267709728347,
+        "accuracy": 66,
+        "speed": null,
+        "heading": null,
+        "updatedAt": "2026-10-12T05:02:38.391Z"
+      }
+    }
+  ],
+  "locations": [
+    {
+      "userId": "admin-1",
+      "latitude": 8.35565671327869,
+      "longitude": 80.50249785081968,
+      "accuracy": 119,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:05.240Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.35565671327869,
+      "longitude": 80.50249785081968,
+      "accuracy": 119,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:05.263Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.35565671327869,
+      "longitude": 80.50249785081968,
+      "accuracy": 119,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:05.321Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.35565671327869,
+      "longitude": 80.50249785081968,
+      "accuracy": 119,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:05.333Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.35565671327869,
+      "longitude": 80.50249785081968,
+      "accuracy": 119,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:05.602Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.35565671327869,
+      "longitude": 80.50249785081968,
+      "accuracy": 119,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:05.613Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.355612740039337,
+      "longitude": 80.50248116201178,
+      "accuracy": 79,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:19.744Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.355612740039337,
+      "longitude": 80.50248116201178,
+      "accuracy": 79,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:19.759Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.355524,
+      "longitude": 80.502762,
+      "accuracy": 56,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:37.094Z"
+    },
+    {
+      "userId": "admin-1",
+      "latitude": 8.355524,
+      "longitude": 80.502762,
+      "accuracy": 56,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-11T18:19:37.104Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355540526351405,
+      "longitude": 80.50272190422731,
+      "accuracy": 63,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:02.306Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355540526351405,
+      "longitude": 80.50272190422731,
+      "accuracy": 63,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:02.361Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355540526351405,
+      "longitude": 80.50272190422731,
+      "accuracy": 63,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:02.385Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355540526351405,
+      "longitude": 80.50272190422731,
+      "accuracy": 63,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:02.426Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355521597869135,
+      "longitude": 80.50268319933575,
+      "accuracy": 66,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:30.438Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355521597869135,
+      "longitude": 80.50268319933575,
+      "accuracy": 66,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:30.465Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355501586038189,
+      "longitude": 80.50272177261073,
+      "accuracy": 66,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:44.690Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355501586038189,
+      "longitude": 80.50272177261073,
+      "accuracy": 66,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:00:44.723Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355539839393641,
+      "longitude": 80.50267709728347,
+      "accuracy": 66,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:02:38.287Z"
+    },
+    {
+      "userId": "85e1bd94-c462-4b20-87d4-2e52ec8a0ff2",
+      "latitude": 8.355539839393641,
+      "longitude": 80.50267709728347,
+      "accuracy": 66,
+      "speed": null,
+      "heading": null,
+      "updatedAt": "2026-10-12T05:02:38.391Z"
+    }
+  ]
+}

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live GPS Tracker - Registration & Login</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Navbar (Clean, No Admin link) -->
+  <nav class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      </div>
+      <span>GeoLive Pro</span>
+    </a>
+  </nav>
+
+  <!-- Main Auth Section -->
+  <div class="auth-container">
+    <div class="glass-card">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem;">Real-time GPS Tracking</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Register to stream and share your live location</p>
+      </div>
+
+      <!-- Tab Switcher (Hidden during OTP step) -->
+      <div class="auth-tabs" id="authTabs">
+        <div class="auth-tab active" id="tabRegister" onclick="switchTab('register')">Register</div>
+        <div class="auth-tab" id="tabLogin" onclick="switchTab('login')">Login</div>
+      </div>
+
+      <!-- Register Step 1: User Form -->
+      <form id="registerForm" onsubmit="handleSendOTP(event)">
+        <div class="form-group">
+          <label><i class="fa-solid fa-user"></i> Full Name</label>
+          <input type="text" id="regName" class="form-input" placeholder="e.g. John Doe" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-envelope"></i> Email Address <span style="color:#38bdf8; font-size:0.75rem;">(OTP verification)</span></label>
+          <input type="email" id="regEmail" class="form-input" placeholder="e.g. name@example.com" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-phone"></i> Phone / Username</label>
+          <input type="text" id="regPhone" class="form-input" placeholder="e.g. 0771234567 or johndoe" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="Create a password" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="regBtn">
+          <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+        </button>
+      </form>
+
+      <!-- Register Step 2: OTP Verification Form (Initially Hidden) -->
+      <form id="otpForm" onsubmit="handleVerifyOTP(event)" style="display: none;">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <div style="width: 52px; height: 52px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem auto;">
+            <i class="fa-solid fa-envelope-circle-check" style="font-size: 1.5rem; color: #10b981;"></i>
+          </div>
+          <h2 style="font-size: 1.2rem; font-weight: 700;">Check Your Email</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+            We sent a 6-digit verification code to:<br>
+            <strong id="otpTargetEmail" style="color: #38bdf8;"></strong>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label style="text-align: center; display: block;"><i class="fa-solid fa-key"></i> Enter 6-Digit OTP Code</label>
+          <input type="text" id="otpCode" class="form-input" maxlength="6" placeholder="------" 
+                 style="text-align: center; font-size: 1.75rem; letter-spacing: 10px; font-weight: 800; font-family: monospace; color: #10b981;" required autofocus>
+        </div>
+
+        <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 0.5rem;" id="verifyBtn">
+          <i class="fa-solid fa-circle-check"></i> Verify & Complete Registration
+        </button>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; font-size: 0.85rem;">
+          <button type="button" onclick="backToRegister()" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
+            <i class="fa-solid fa-arrow-left"></i> Change Email
+          </button>
+          <button type="button" id="resendBtn" onclick="resendOTP()" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
+            <i class="fa-solid fa-rotate-right"></i> Resend Code
+          </button>
+        </div>
+      </form>
+
+      <!-- Login Form (Initially hidden) -->
+      <form id="loginForm" onsubmit="handleLogin(event)" style="display: none;">
+        <div class="form-group">
+          <label><i class="fa-solid fa-user-check"></i> Email or Phone / Username</label>
+          <input type="text" id="loginId" class="form-input" placeholder="Enter your email or phone/username" required>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="loginBtn">
+          <i class="fa-solid fa-right-to-bracket"></i> Login to Dashboard
+        </button>
+      </form>
+
+      <div style="margin-top: 1.5rem; text-align: center; font-size: 0.825rem; color: var(--text-dim);">
+        <i class="fa-solid fa-shield-halved"></i> Verified with end-to-end encrypted GPS streaming
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    let resendCountdown = 0;
+    let resendInterval = null;
+
+    function showToast(message, type = 'info', duration = 4500) {
+      const toasts = document.getElementById('toasts');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle'}"></i> <span>${message}</span>`;
+      toasts.appendChild(toast);
+      setTimeout(() => toast.remove(), duration);
+    }
+
+    function switchTab(mode) {
+      const regTab = document.getElementById('tabRegister');
+      const loginTab = document.getElementById('tabLogin');
+      const regForm = document.getElementById('registerForm');
+      const otpForm = document.getElementById('otpForm');
+      const loginForm = document.getElementById('loginForm');
+      const authTabs = document.getElementById('authTabs');
+
+      authTabs.style.display = 'flex';
+      otpForm.style.display = 'none';
+
+      if (mode === 'register') {
+        regTab.classList.add('active');
+        loginTab.classList.remove('active');
+        regForm.style.display = 'block';
+        loginForm.style.display = 'none';
+      } else {
+        loginTab.classList.add('active');
+        regTab.classList.remove('active');
+        regForm.style.display = 'none';
+        loginForm.style.display = 'block';
+      }
+    }
+
+    // Step 1: Send OTP to Email
+    async function handleSendOTP(e) {
+      e.preventDefault();
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const btn = document.getElementById('regBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending Code...';
+
+      try {
+        const res = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          if (data.devOtp) {
+            showToast(`[Verification Code]: ${data.devOtp}`, 'info', 10000);
+            document.getElementById('otpCode').value = data.devOtp;
+          }
+
+          // Switch to OTP view
+          document.getElementById('registerForm').style.display = 'none';
+          document.getElementById('otpForm').style.display = 'block';
+          document.getElementById('authTabs').style.display = 'none';
+          document.getElementById('otpTargetEmail').innerText = email;
+          document.getElementById('otpCode').focus();
+
+          startResendCountdown(60);
+        } else {
+          showToast(data.error || 'Failed to send verification code', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code';
+      }
+    }
+
+    // Step 2: Verify OTP
+    async function handleVerifyOTP(e) {
+      e.preventDefault();
+      const email = document.getElementById('regEmail').value.trim();
+      const otp = document.getElementById('otpCode').value.trim();
+      const btn = document.getElementById('verifyBtn');
+
+      if (otp.length !== 6) {
+        showToast('Please enter the complete 6-digit code', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying Code...';
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('Email verified! Account created successfully.', 'success');
+          localStorage.setItem('geolive_user', JSON.stringify(data.user));
+          setTimeout(() => {
+            window.location.href = '/user';
+          }, 800);
+        } else {
+          showToast(data.error || 'Invalid verification code', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Verify & Complete Registration';
+      }
+    }
+
+    function backToRegister() {
+      document.getElementById('otpForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'block';
+      document.getElementById('authTabs').style.display = 'flex';
+    }
+
+    function resendOTP() {
+      if (resendCountdown > 0) return;
+      const fakeEvent = { preventDefault: () => {} };
+      handleSendOTP(fakeEvent);
+    }
+
+    function startResendCountdown(seconds) {
+      resendCountdown = seconds;
+      const resendBtn = document.getElementById('resendBtn');
+      resendBtn.disabled = true;
+
+      clearInterval(resendInterval);
+      resendInterval = setInterval(() => {
+        resendCountdown--;
+        if (resendCountdown <= 0) {
+          clearInterval(resendInterval);
+          resendBtn.disabled = false;
+          resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend Code';
+        } else {
+          resendBtn.innerHTML = `<i class="fa-regular fa-clock"></i> Resend in ${resendCountdown}s`;
+        }
+      }, 1000);
+    }
+
+    // Login Handler
+    async function handleLogin(e) {
+      e.preventDefault();
+      const login = document.getElementById('loginId').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging in...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ login, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('Login successful!', 'success');
+          localStorage.setItem('geolive_user', JSON.stringify(data.user));
+          setTimeout(() => {
+            if (data.user.role === 'admin') {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/user';
+            }
+          }, 800);
+        } else {
+          showToast(data.error || 'Invalid credentials', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login to Dashboard';
+      }
+    }
+  </script>
+</body>
+</html>
