@@ -6,20 +6,25 @@
   <title>My Live Location - GeoLive Pro</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Theme Management (Light mode default) -->
+  <script src="js/theme.js"></script>
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     .location-url-box {
       display: flex;
+      flex-wrap: wrap;
+      align-items: center;
       gap: 0.5rem;
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--input-bg);
       padding: 0.5rem;
       border-radius: var(--radius-md);
       border: 1px solid var(--border-color);
-      margin-top: 0.75rem;
+      margin-top: 0.5rem;
     }
     .location-url-input {
       flex: 1;
+      min-width: 220px;
       background: transparent;
       border: none;
       color: #38bdf8;
@@ -57,6 +62,9 @@
       <span id="userNameBadge" style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
         <i class="fa-solid fa-circle-user"></i> Loading...
       </span>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch to Dark Mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
       <button onclick="handleLogout()" class="btn btn-outline btn-sm">
         <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
       </button>
@@ -87,30 +95,26 @@
           <button id="viewLocationBtn" class="btn btn-primary" onclick="startTrackingAndCenter()">
             <i class="fa-solid fa-crosshairs"></i> View My Live Location
           </button>
-          
-          <button id="toggleTrackBtn" class="btn btn-outline" onclick="toggleTracking()">
-            <i class="fa-solid fa-pause"></i> Pause Stream
-          </button>
         </div>
       </div>
 
-      <!-- Live Shareable Location URL Box (Requested by User) -->
+      <!-- Live Shareable Google Maps Location URL -->
       <div id="urlContainer" style="display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-          <label style="font-size: 0.85rem; font-weight: 600; color: #38bdf8;">
-            <i class="fa-solid fa-link"></i> Your Public Live Location Tracking URL:
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.25rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-map-location-dot"></i> Google Maps Live Location URL:
           </label>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">
-            Share this link with anyone to let them track your live location
+          <span style="font-size: 0.775rem; color: var(--text-muted);">
+            Direct Google Maps coordinates link for your live position
           </span>
         </div>
         <div class="location-url-box">
-          <input type="text" id="liveUrlInput" class="location-url-input" readonly>
-          <button class="btn btn-primary btn-sm" onclick="copyShareUrl()">
-            <i class="fa-solid fa-copy"></i> Copy Link
+          <input type="text" id="gmapsUrlInput" class="location-url-input" style="color: #34d399;" readonly placeholder="Waiting for live GPS coordinates...">
+          <button class="btn btn-success btn-sm" onclick="copyGmapsUrl()">
+            <i class="fa-solid fa-copy"></i> Copy Google Maps Link
           </button>
           <a id="gmapsLink" href="#" target="_blank" class="btn btn-outline btn-sm">
-            <i class="fa-solid fa-map-location-dot"></i> Google Maps
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Google Maps
           </a>
         </div>
       </div>

@@ -131,7 +131,45 @@ const db = {
     return newUser;
   },
 
+  createOrLoginGoogleUser({ name, email, googleId = null, photoUrl = null }) {
+    if (!email) throw new Error('Google account email is required');
+    const data = loadDB();
+    const normalizedEmail = email.trim().toLowerCase();
+    const userIndex = data.users.findIndex(u => u.email && u.email.toLowerCase() === normalizedEmail);
+
+    if (userIndex !== -1) {
+      const existing = data.users[userIndex];
+      existing.lastSeen = new Date().toISOString();
+      if (googleId) existing.googleId = googleId;
+      if (photoUrl) existing.photoUrl = photoUrl;
+      saveDB(data);
+      firebase.saveUser(existing).catch(err => console.error('Firebase sync error:', err));
+      return { user: existing, isNew: false };
+    }
+
+    const newUser = {
+      id: crypto.randomUUID(),
+      name: (name || normalizedEmail.split('@')[0]).trim(),
+      email: normalizedEmail,
+      phone: normalizedEmail.split('@')[0],
+      passwordHash: null,
+      googleId,
+      photoUrl,
+      role: 'user',
+      authProvider: 'google',
+      createdAt: new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+      location: null
+    };
+
+    data.users.push(newUser);
+    saveDB(data);
+    firebase.saveUser(newUser).catch(err => console.error('Firebase sync error:', err));
+    return { user: newUser, isNew: true };
+  },
+
   verifyPassword(user, password) {
+    if (!user.passwordHash) return false;
     return bcrypt.compareSync(password, user.passwordHash);
   },
 

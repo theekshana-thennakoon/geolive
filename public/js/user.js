@@ -110,25 +110,6 @@ function startWatching() {
   );
 }
 
-function stopWatching() {
-  if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  }
-  isTracking = false;
-  updateStatusUI(false);
-}
-
-function toggleTracking() {
-  if (isTracking) {
-    stopWatching();
-    showToast('Live tracking paused', 'info');
-  } else {
-    startWatching();
-    showToast('Live tracking resumed', 'success');
-  }
-}
-
 function handleLocationSuccess(position, forceCenter = false) {
   const { latitude, longitude, accuracy, speed, heading } = position.coords;
 
@@ -176,9 +157,12 @@ function updateDisplay(loc, forceCenter = false) {
   const urlBox = document.getElementById('urlContainer');
   urlBox.style.display = 'block';
 
-  const shareUrl = `${window.location.origin}/track?id=${currentUser.id}`;
-  document.getElementById('liveUrlInput').value = shareUrl;
-  document.getElementById('gmapsLink').href = `https://www.google.com/maps?q=${lat},${lng}`;
+  // Google Maps Live Location URL
+  const gmapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+  const gmapsInput = document.getElementById('gmapsUrlInput');
+  if (gmapsInput) gmapsInput.value = gmapsUrl;
+  const gmapsLink = document.getElementById('gmapsLink');
+  if (gmapsLink) gmapsLink.href = gmapsUrl;
 
   // Update Leaflet marker
   const latLng = [lat, lng];
@@ -239,18 +223,15 @@ function updateStatusUI(tracking) {
   const badge = document.getElementById('liveBadge');
   const dot = document.getElementById('liveDot');
   const text = document.getElementById('liveStatusText');
-  const toggleBtn = document.getElementById('toggleTrackBtn');
 
   if (tracking) {
     badge.className = 'badge badge-online';
     dot.className = 'pulse-dot online';
     text.innerText = 'Live Streaming Active';
-    toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause Stream';
   } else {
     badge.className = 'badge badge-offline';
     dot.className = 'pulse-dot offline';
-    text.innerText = 'Tracking Paused';
-    toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i> Resume Stream';
+    text.innerText = 'Tracking Stopped';
   }
 }
 
@@ -266,14 +247,18 @@ function handleLocationError(err) {
   showToast(msg, 'error');
 }
 
-function copyShareUrl() {
-  const input = document.getElementById('liveUrlInput');
+function copyGmapsUrl() {
+  const input = document.getElementById('gmapsUrlInput');
+  if (!input || !input.value) {
+    showToast('GPS coordinates not ready yet. Please click "View My Live Location".', 'error');
+    return;
+  }
   input.select();
   navigator.clipboard.writeText(input.value).then(() => {
-    showToast('Live tracking URL copied to clipboard!', 'success');
+    showToast('Google Maps live location URL copied to clipboard!', 'success');
   }).catch(() => {
     document.execCommand('copy');
-    showToast('Live tracking URL copied!', 'success');
+    showToast('Google Maps live location URL copied!', 'success');
   });
 }
 

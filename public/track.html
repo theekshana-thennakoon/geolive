@@ -6,6 +6,8 @@
   <title>Live GPS Tracker - Public Viewer</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Theme Management (Light mode default) -->
+  <script src="js/theme.js"></script>
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -13,7 +15,7 @@
       overflow-x: hidden;
     }
     .track-header {
-      background: rgba(11, 15, 25, 0.9);
+      background: var(--navbar-bg);
       backdrop-filter: var(--backdrop);
       border-bottom: 1px solid var(--border-color);
       padding: 1rem 2rem;
@@ -22,13 +24,15 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 1rem;
+      transition: background-color 0.25s ease, border-color 0.25s ease;
     }
     #trackMap {
       width: 100%;
       height: calc(100vh - 170px);
     }
     .bottom-info-bar {
-      background: rgba(11, 15, 25, 0.95);
+      background: var(--navbar-bg);
+      backdrop-filter: var(--backdrop);
       border-top: 1px solid var(--border-color);
       padding: 0.75rem 2rem;
       display: flex;
@@ -36,6 +40,7 @@
       justify-content: space-around;
       flex-wrap: wrap;
       gap: 1rem;
+      transition: background-color 0.25s ease, border-color 0.25s ease;
     }
     @media (max-width: 768px) {
       .track-header {
@@ -68,16 +73,24 @@
       </div>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
       <span class="badge badge-offline" id="trackStatusBadge">
         <span class="pulse-dot offline" id="trackStatusDot"></span>
         <span id="trackStatusText">Connecting...</span>
       </span>
+      <button onclick="copyGmapsUrl()" class="btn btn-success btn-sm" id="copyGmapsBtn" title="Copy Google Maps Live Location URL">
+        <i class="fa-solid fa-copy"></i> Copy Google Maps
+      </button>
       <a id="gmapsExternalBtn" href="#" target="_blank" class="btn btn-outline btn-sm">
-        <i class="fa-solid fa-map-location-dot"></i> Open Google Maps
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Google Maps
       </a>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch to Dark Mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
     </div>
   </div>
+
+
 
   <!-- Map -->
   <div id="trackMap"></div>
@@ -266,6 +279,31 @@
         }
       }
     }
+
+    function copyGmapsUrl() {
+      const gmapsBtn = document.getElementById('gmapsExternalBtn');
+      if (!gmapsBtn || !gmapsBtn.href || gmapsBtn.href.endsWith('#')) {
+        showToast('Live GPS coordinates not ready yet', 'error');
+        return;
+      }
+      navigator.clipboard.writeText(gmapsBtn.href).then(() => {
+        showToast('Google Maps live location URL copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Google Maps live location URL copied!', 'success');
+      });
+    }
+
+    function showToast(message, type = 'info') {
+      const toasts = document.getElementById('toasts');
+      if (!toasts) return;
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-info-circle'}"></i> <span>${message}</span>`;
+      toasts.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
   </script>
+  <div class="toast-container" id="toasts"></div>
 </body>
 </html>
+

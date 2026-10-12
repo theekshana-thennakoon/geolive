@@ -1,10 +1,55 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+  /* Default Mode: Light Mode */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --bg-card-hover: #ffffff;
+  --bg-card-sub: rgba(241, 245, 249, 0.9);
+  --border-color: rgba(203, 213, 225, 0.85);
+  --border-glow: rgba(37, 99, 235, 0.2);
+  
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-glow: rgba(37, 99, 235, 0.25);
+  
+  --accent-cyan: #0284c7;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+  
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  
+  --shadow-card: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --backdrop: blur(16px);
+  
+  --input-bg: #f1f5f9;
+  --navbar-bg: rgba(255, 255, 255, 0.9);
+  --modal-bg: #ffffff;
+  --scrollbar-track: #f8fafc;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-hover: #94a3b8;
+  --bg-gradient-1: rgba(37, 99, 235, 0.06);
+  --bg-gradient-2: rgba(2, 132, 199, 0.05);
+  --popup-bg: #ffffff;
+  --popup-text: #0f172a;
+}
+
+[data-theme="dark"] {
+  /* Optional: Dark Mode */
   --bg-primary: #0b0f19;
   --bg-secondary: #111827;
   --bg-card: rgba(17, 24, 39, 0.75);
   --bg-card-hover: rgba(31, 41, 55, 0.85);
+  --bg-card-sub: rgba(0, 0, 0, 0.35);
   --border-color: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(59, 130, 246, 0.4);
   
@@ -21,13 +66,18 @@
   --text-muted: #9ca3af;
   --text-dim: #6b7280;
   
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-full: 9999px;
-  
   --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-  --backdrop: blur(16px);
+  
+  --input-bg: rgba(0, 0, 0, 0.35);
+  --navbar-bg: rgba(11, 15, 25, 0.85);
+  --modal-bg: #111827;
+  --scrollbar-track: #0b0f19;
+  --scrollbar-thumb: #1f2937;
+  --scrollbar-hover: #374151;
+  --bg-gradient-1: rgba(59, 130, 246, 0.12);
+  --bg-gradient-2: rgba(6, 182, 212, 0.1);
+  --popup-bg: #111827;
+  --popup-text: #f9fafb;
 }
 
 * {
@@ -43,9 +93,10 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, var(--bg-gradient-1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, var(--bg-gradient-2) 0px, transparent 50%);
   background-attachment: fixed;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Scrollbar */
@@ -54,14 +105,38 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: var(--scrollbar-thumb);
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: var(--scrollbar-hover);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: var(--bg-card-sub);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.08);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 /* Navbar */
@@ -70,13 +145,15 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  background: rgba(11, 15, 25, 0.85);
+  background: var(--navbar-bg);
   backdrop-filter: var(--backdrop);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 1000;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
+
 
 .brand {
   display: flex;
@@ -178,6 +255,39 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.btn-google {
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.btn-google:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  color: #111827;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.25rem 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+.auth-divider span {
+  padding: 0 0.75rem;
+}
+
 .btn-sm {
   padding: 0.45rem 0.85rem;
   font-size: 0.825rem;
@@ -202,17 +312,18 @@ body {
   padding: 0.8rem 1rem;
   font-family: inherit;
   font-size: 0.95rem;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-main);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.25s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-glow);
+  background: var(--bg-secondary);
 }
 
 /* Status Badges */
@@ -288,9 +399,10 @@ body {
 
 .auth-tabs {
   display: flex;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--input-bg);
   padding: 4px;
   border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   margin-bottom: 1.5rem;
 }
 
@@ -333,10 +445,11 @@ body {
 }
 
 .stat-box {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-card-sub);
   padding: 1rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  transition: background-color 0.25s, border-color 0.25s;
 }
 
 .stat-label {
@@ -381,7 +494,7 @@ body {
 }
 
 .user-card {
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg-card-sub);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 1rem;
@@ -391,7 +504,7 @@ body {
 
 .user-card:hover, .user-card.active {
   border-color: var(--primary);
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(59, 130, 246, 0.12);
   transform: translateX(3px);
 }
 
@@ -703,3 +816,74 @@ body {
     font-size: 1.1rem !important;
   }
 }
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  padding: 1rem;
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-dialog {
+  background: var(--modal-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 440px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow-card);
+  transform: translateY(15px);
+  transition: transform 0.25s ease, background-color 0.25s ease;
+  position: relative;
+  color: var(--text-main);
+}
+
+.modal-backdrop.active .modal-dialog {
+  transform: translateY(0);
+}
+
+/* Global Leaflet Popups Theming */
+.leaflet-popup-content-wrapper {
+  background: var(--popup-bg) !important;
+  color: var(--popup-text) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+.leaflet-popup-tip {
+  background: var(--popup-bg) !important;
+}
+
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--text-main);
+}
+

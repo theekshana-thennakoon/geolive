@@ -151,6 +151,52 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
+// Google Sign-In & Registration
+app.post('/api/auth/google', (req, res) => {
+  try {
+    const { name, email, googleId, photoUrl } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Google email is required' });
+    }
+
+    const { user, isNew } = db.createOrLoginGoogleUser({ name, email, googleId, photoUrl });
+
+    if (isNew) {
+      io.to('admin').emit('user:registered', {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        createdAt: user.createdAt,
+        lastSeen: user.lastSeen,
+        isOnline: false,
+        location: null
+      });
+    }
+
+    res.json({
+      success: true,
+      message: isNew ? 'Google registration successful' : 'Google login successful',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Public Config Endpoint
+app.get('/api/config', (req, res) => {
+  res.json({
+    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+  });
+});
+
 // Location Update (Called by Web browser or Kodular mobile app)
 app.post('/api/location/update', (req, res) => {
   try {

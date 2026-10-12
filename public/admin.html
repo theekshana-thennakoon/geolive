@@ -6,18 +6,20 @@
   <title>Admin Dashboard - Live Fleet Tracking</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Theme Management (Light mode default) -->
+  <script src="js/theme.js"></script>
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     .leaflet-popup-content-wrapper {
-      background: #111827;
-      color: #f9fafb;
+      background: var(--popup-bg);
+      color: var(--popup-text);
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-card);
     }
     .leaflet-popup-tip {
-      background: #111827;
+      background: var(--popup-bg);
     }
   </style>
 </head>
@@ -31,11 +33,14 @@
       <span>GeoLive <span style="color: #60a5fa; font-weight: 400;">Fleet Command</span></span>
     </a>
     
-    <div style="display: flex; align-items: center; gap: 1.25rem;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
       <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
         <span class="pulse-dot online" id="socketStatusDot"></span>
         <span id="socketStatusText">Live Socket Connected</span>
       </div>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch to Dark Mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
       <button onclick="logoutAdmin()" class="btn btn-outline btn-sm">
         <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
       </button>
