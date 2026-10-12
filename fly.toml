@@ -1,8 +1,12 @@
-app = 'geolive-tracking'
+# fly.toml app configuration file generated for geolive-tracking-purple-star-910 on 2026-10-12T22:52:32+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'geolive-tracking-purple-star-910'
 primary_region = 'sin'
 
 [build]
-
 [http_service]
   internal_port = 3000
   force_https = true
@@ -14,3 +18,5 @@ primary_region = 'sin'
 [[vm]]
   size = 'shared-cpu-1x'
   memory = '512mb'
+  cpus = 1
+  memory_mb = 512
