@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: geolive-tracking
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: SMTP_GMAIL_USER
+        sync: false
+      - key: SMTP_GMAIL_PASS
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false

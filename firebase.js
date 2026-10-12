@@ -6,11 +6,24 @@ const SERVICE_ACCOUNT_FILE = path.join(__dirname, 'serviceAccountKey.json');
 let db = null;
 let isFirebaseConnected = false;
 
-// Check if serviceAccountKey.json exists
-if (fs.existsSync(SERVICE_ACCOUNT_FILE)) {
+// Load service account from Environment Variable OR file
+let serviceAccount = null;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
-    const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_FILE, 'utf8'));
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (e) {
+    console.error('⚠️ Could not parse FIREBASE_SERVICE_ACCOUNT JSON:', e.message);
+  }
+} else if (fs.existsSync(SERVICE_ACCOUNT_FILE)) {
+  try {
+    serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_FILE, 'utf8'));
+  } catch (e) {
+    console.error('⚠️ Error reading serviceAccountKey.json:', e.message);
+  }
+}
 
+if (serviceAccount) {
+  try {
     // Initialize Firebase Admin
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -25,8 +38,9 @@ if (fs.existsSync(SERVICE_ACCOUNT_FILE)) {
     console.error('⚠️ Error initializing Firebase:', err.message);
   }
 } else {
-  console.log('ℹ️ serviceAccountKey.json not found. Set it up to store data directly in Firebase Cloud.');
+  console.log('ℹ️ serviceAccountKey.json not found. Set it up or configure FIREBASE_SERVICE_ACCOUNT env var.');
 }
+
 
 const firebaseService = {
   isConnected() {
