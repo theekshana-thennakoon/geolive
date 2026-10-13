@@ -173,9 +173,12 @@ function updateDisplay(loc, forceCenter = false) {
   if (valLat) valLat.innerText = lat.toFixed(6);
   const valLng = document.getElementById('valLng');
   if (valLng) valLng.innerText = lng.toFixed(6);
-  document.getElementById('valAcc').innerText = loc.accuracy ? `±${Math.round(loc.accuracy)} m` : 'N/A';
-  document.getElementById('valSpeed').innerText = loc.speed ? `${(loc.speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
-  document.getElementById('valTime').innerText = new Date(loc.updatedAt || Date.now()).toLocaleTimeString();
+  const valAcc = document.getElementById('valAcc');
+  if (valAcc) valAcc.innerText = loc.accuracy ? `±${Math.round(loc.accuracy)} m` : 'N/A';
+  const valSpeed = document.getElementById('valSpeed');
+  if (valSpeed) valSpeed.innerText = loc.speed ? `${(loc.speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
+  const valTime = document.getElementById('valTime');
+  if (valTime) valTime.innerText = new Date(loc.updatedAt || Date.now()).toLocaleTimeString();
 
   // Show live URL share box
   const urlBox = document.getElementById('urlContainer');
