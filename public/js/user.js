@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   currentUser = JSON.parse(cached);
   document.getElementById('userNameBadge').innerHTML = `<i class="fa-solid fa-circle-user"></i> ${currentUser.name} (${currentUser.phone})`;
-  document.getElementById('userIdCode').innerText = currentUser.id;
+  const userIdEl = document.getElementById('userIdCode');
+  if (userIdEl) userIdEl.innerText = currentUser.id;
 
   initSocket();
   initMap();
