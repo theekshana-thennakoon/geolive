@@ -147,6 +147,20 @@
     let resendCountdown = 0;
     let resendInterval = null;
 
+    function notifyNativeApp(data) {
+      try {
+        const payload = typeof data === 'string' ? data : JSON.stringify(data);
+        if (window.AppInventor && typeof window.AppInventor.setWebViewString === 'function') {
+          window.AppInventor.setWebViewString(payload);
+        }
+        if (data && data.userId) {
+          document.title = `geolive_user:${data.userId}`;
+        }
+      } catch (e) {
+        console.log('App bridge:', e);
+      }
+    }
+
     function showToast(message, type = 'info', duration = 4500) {
       const toasts = document.getElementById('toasts');
       const toast = document.createElement('div');
@@ -252,6 +266,7 @@
         if (data.success) {
           showToast('Email verified! Account created successfully.', 'success');
           localStorage.setItem('geolive_user', JSON.stringify(data.user));
+          notifyNativeApp({ action: 'login', userId: data.user.id, name: data.user.name, phone: data.user.phone });
           setTimeout(() => {
             window.location.href = '/user';
           }, 800);
@@ -317,6 +332,7 @@
         if (data.success) {
           showToast('Login successful!', 'success');
           localStorage.setItem('geolive_user', JSON.stringify(data.user));
+          notifyNativeApp({ action: 'login', userId: data.user.id, name: data.user.name, phone: data.user.phone });
           setTimeout(() => {
             if (data.user.role === 'admin') {
               window.location.href = '/admin';
@@ -468,6 +484,7 @@
         if (data.success) {
           showToast(data.message || 'Google authentication successful!', 'success');
           localStorage.setItem('geolive_user', JSON.stringify(data.user));
+          notifyNativeApp({ action: 'login', userId: data.user.id, name: data.user.name, phone: data.user.phone });
           closeGoogleModal();
           setTimeout(() => {
             if (data.user.role === 'admin') {

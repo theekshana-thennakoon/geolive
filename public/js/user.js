@@ -22,12 +22,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const userIdEl = document.getElementById('userIdCode');
   if (userIdEl) userIdEl.innerText = currentUser.id;
 
+  // Notify native Android app (Kodular / WebViewer) about the active user
+  notifyNativeApp({ action: 'login', userId: currentUser.id, name: currentUser.name, phone: currentUser.phone });
+
   initSocket();
   initMap();
 
   // If user already has a saved location, display it
   fetchInitialLocation();
 });
+
+function notifyNativeApp(data) {
+  try {
+    const payload = typeof data === 'string' ? data : JSON.stringify(data);
+    if (window.AppInventor && typeof window.AppInventor.setWebViewString === 'function') {
+      window.AppInventor.setWebViewString(payload);
+    }
+    if (data && data.userId) {
+      document.title = `geolive_user:${data.userId}`;
+    }
+  } catch (e) {
+    console.log('App bridge:', e);
+  }
+}
 
 function initSocket() {
   socket = io();
@@ -268,6 +285,7 @@ function copyGmapsUrl() {
 }
 
 function handleLogout() {
+  notifyNativeApp({ action: 'logout' });
   localStorage.removeItem('geolive_user');
   window.location.href = '/';
 }
