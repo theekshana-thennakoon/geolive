@@ -245,11 +245,20 @@ const db = {
     };
   },
 
-  getUserHistory(userId, limit = 50) {
+  getUserHistory(userId, limit = 200) {
     const data = loadDB();
-    return (data.locations || [])
-      .filter(l => l.userId === userId)
-      .slice(-limit);
+    const list = (data.locations || []).filter(l => l.userId === userId);
+    if (list.length === 0) {
+      const user = data.users.find(u => u.id === userId);
+      if (user && user.location && user.location.latitude) {
+        return [{
+          userId,
+          ...user.location
+        }];
+      }
+      return [];
+    }
+    return list.slice(-limit);
   },
 
   deleteUser(userId) {

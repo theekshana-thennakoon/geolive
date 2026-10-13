@@ -1041,3 +1041,92 @@ body {
   color: var(--text-main);
 }
 
+/* Location History Table & Markers */
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+  text-align: left;
+}
+
+.history-table th {
+  background: var(--bg-card-sub);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-transform: uppercase;
+  font-size: 0.725rem;
+  letter-spacing: 0.5px;
+}
+
+.history-table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.history-table tr:hover {
+  background: var(--input-bg);
+}
+
+.history-marker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+}
+.history-marker-badge.start {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
+}
+.history-marker-badge.end {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+}
+.history-marker-badge.point {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid #a855f7;
+}
+
+/* History Route Custom Leaflet Markers */
+.custom-history-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.history-pin {
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  border: 2px solid white;
+}
+.history-pin.start {
+  background: #10b981;
+}
+.history-pin.end {
+  background: #2563eb;
+}
+.history-pin.waypoint {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #a855f7;
+  border: 2px solid white;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.8);
+}
+

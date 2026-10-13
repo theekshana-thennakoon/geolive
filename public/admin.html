@@ -120,8 +120,23 @@
       </div>
 
       <!-- Map Toolbar & Map -->
+      <div id="historyModeNotice" style="display: none; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(14, 165, 233, 0.2)); border: 1px solid rgba(99, 102, 241, 0.4); padding: 0.6rem 1rem; border-radius: var(--radius-md); margin-bottom: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.875rem;">
+          <i class="fa-solid fa-route" style="color: #818cf8; font-size: 1.15rem;"></i>
+          <span>Viewing Route History: <b id="historyNoticeUserName" style="color: #38bdf8;">User</b> (<span id="historyNoticePointCount">0</span> GPS waypoints)</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="reopenCurrentHistoryModal()" style="padding: 0.3rem 0.65rem; font-size: 0.775rem;">
+            <i class="fa-solid fa-list-ul"></i> Table View
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="exitHistoryMode()" style="padding: 0.3rem 0.65rem; font-size: 0.775rem;">
+            <i class="fa-solid fa-xmark"></i> Exit History
+          </button>
+        </div>
+      </div>
+
       <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 0.5rem;">
-        <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted);">
+        <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted);" id="mapAreaTitle">
           <i class="fa-solid fa-map-location-dot"></i> Live Fleet Overview (Real-Time GPS)
         </span>
         <div style="display: flex; gap: 0.5rem;">
@@ -135,6 +150,48 @@
 
     </div>
 
+  </div>
+
+  <!-- User Location History Modal -->
+  <div id="userHistoryModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 720px; width: 95%;">
+      <button class="modal-close" onclick="closeUserHistoryModal()">&times;</button>
+      
+      <!-- Modal Header -->
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);">
+        <div class="brand-icon" style="width: 42px; height: 42px; background: linear-gradient(135deg, #4f46e5, #06b6d4);">
+          <i class="fa-solid fa-route" style="color: white; font-size: 1.15rem;"></i>
+        </div>
+        <div style="flex: 1;">
+          <h3 id="historyModalTitle" style="font-size: 1.25rem; font-weight: 700; margin: 0;">User Location History</h3>
+          <p id="historyModalSubtitle" style="font-size: 0.8rem; color: var(--text-muted); margin: 0.15rem 0 0 0;">View recorded GPS trail, timestamps, and speeds</p>
+        </div>
+      </div>
+
+      <!-- Action Bar & Stats -->
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem;">
+          <div><b style="color: var(--primary);" id="historyStatPoints">0</b> Points Logged</div>
+          <span style="color: var(--border-color);">|</span>
+          <div id="historyStatLatestTime" style="color: var(--text-muted); font-size: 0.8rem;">Latest: N/A</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="renderHistoryOnMapFromModal()" style="font-size: 0.8rem; padding: 0.4rem 0.85rem;">
+            <i class="fa-solid fa-map-location-dot"></i> View Route on Map
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="exportHistoryCsv()" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;" title="Download CSV">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- History Table Container -->
+      <div id="historyListContainer" style="max-height: 360px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+          <i class="fa-solid fa-spinner fa-spin"></i> Loading location history...
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Admin Login Modal (if unauthorized) -->

@@ -3,6 +3,11 @@ let socket = null;
 let allUsers = [];
 const markers = {}; // userId -> Leaflet Marker
 let selectedUserId = null;
+let currentHistoryData = [];
+let currentHistoryUser = null;
+let historyPolyline = null;
+let historyGlowPolyline = null;
+let historyMarkersLayer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAdminAuth();
@@ -177,13 +182,18 @@ function renderUsersList() {
           ${u.email ? `<div><i class="fa-solid fa-envelope"></i> ${escapeHtml(u.email)}</div>` : ''}
           <div><i class="fa-solid fa-phone"></i> ${escapeHtml(u.phone)}</div>
           <div><i class="fa-solid fa-clock"></i> Last Active: ${lastSeenStr}</div>
-          <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 0.35rem;">
+          <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 0.35rem; gap: 0.5rem;">
             <span style="color: ${hasLoc ? '#38bdf8' : '#6b7280'}; font-size: 0.775rem;">
               <i class="fa-solid fa-location-crosshairs"></i> ${hasLoc ? `${u.location.latitude.toFixed(4)}, ${u.location.longitude.toFixed(4)}` : 'No GPS signal yet'}
             </span>
-            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteUser('${u.id}', '${escapeHtml(u.name)}')" title="Delete user" style="padding: 2px 7px; font-size: 0.7rem;">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+            <div style="display: flex; gap: 0.35rem; align-items: center;">
+              <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openUserHistoryModal('${u.id}')" title="View Location History" style="padding: 2px 7px; font-size: 0.72rem; gap: 4px;">
+                <i class="fa-solid fa-route" style="color: #818cf8;"></i> History
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteUser('${u.id}', '${escapeHtml(u.name)}')" title="Delete user" style="padding: 2px 7px; font-size: 0.7rem;">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -246,10 +256,13 @@ function updateUserMarker(user) {
         <div><b>Speed:</b> ${speedStr}</div>
         <div><b>Last Updated:</b> ${lastSeenStr}</div>
       </div>
-      <div style="margin-top: 10px;">
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; text-align: center; padding: 6px 10px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">
+      <div style="margin-top: 10px; display: flex; gap: 6px;">
+        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 8px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600;">
           <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps
         </a>
+        <button onclick="openUserHistoryModal('${user.id}')" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 8px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-route"></i> History
+        </button>
       </div>
     </div>
   `;
@@ -373,4 +386,292 @@ function showToast(message, type = 'info') {
   toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle'}"></i> <span>${message}</span>`;
   toasts.appendChild(toast);
   setTimeout(() => toast.remove(), 4000);
+}
+
+// ==========================================
+// LOCATION HISTORY FEATURES (USER-WISE)
+// ==========================================
+
+async function openUserHistoryModal(userId) {
+  const user = allUsers.find(u => u.id === userId);
+  if (!user) {
+    showToast('User not found', 'error');
+    return;
+  }
+
+  currentHistoryUser = user;
+  const modal = document.getElementById('userHistoryModal');
+  const title = document.getElementById('historyModalTitle');
+  const sub = document.getElementById('historyModalSubtitle');
+  const container = document.getElementById('historyListContainer');
+  const statPoints = document.getElementById('historyStatPoints');
+  const statLatest = document.getElementById('historyStatLatestTime');
+
+  title.innerText = `Location History: ${user.name}`;
+  sub.innerText = `Phone: ${user.phone} | User ID: ${user.id}`;
+  statPoints.innerText = '...';
+  statLatest.innerText = 'Loading...';
+  container.innerHTML = `
+    <div style="padding: 2.5rem; text-align: center; color: var(--text-muted);">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+      <div>Loading location history...</div>
+    </div>
+  `;
+
+  modal.classList.add('active');
+
+  try {
+    const res = await fetch(`/api/user/${userId}/history?limit=300`);
+    const data = await res.json();
+    
+    if (!data.success) {
+      container.innerHTML = `<div style="padding: 2rem; text-align: center; color: #f87171;">Failed to load location history</div>`;
+      return;
+    }
+
+    currentHistoryData = data.history || [];
+
+    // Fallback: if user has current location but no recorded history array yet
+    if (currentHistoryData.length === 0 && user.location && user.location.latitude) {
+      currentHistoryData = [{
+        userId: user.id,
+        ...user.location
+      }];
+    }
+
+    statPoints.innerText = currentHistoryData.length;
+
+    if (currentHistoryData.length === 0) {
+      statLatest.innerText = 'No GPS recorded yet';
+      container.innerHTML = `
+        <div style="padding: 3rem 1.5rem; text-align: center; color: var(--text-muted);">
+          <i class="fa-solid fa-route" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 0.75rem;"></i>
+          <div style="font-weight: 600; font-size: 1rem; color: var(--text-main); margin-bottom: 0.25rem;">No Location History Available</div>
+          <div style="font-size: 0.825rem;">This user has not sent any GPS location updates yet.</div>
+        </div>
+      `;
+      return;
+    }
+
+    const latest = currentHistoryData[currentHistoryData.length - 1];
+    statLatest.innerText = `Latest: ${latest.updatedAt ? new Date(latest.updatedAt).toLocaleTimeString() : 'N/A'}`;
+
+    // Render table (newest first)
+    const reversedHistory = [...currentHistoryData].reverse();
+    container.innerHTML = `
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th style="width: 65px;">Point</th>
+            <th>Recorded Time</th>
+            <th>Coordinates</th>
+            <th>Accuracy</th>
+            <th>Speed</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${reversedHistory.map((p, idx) => {
+            const pointNumber = currentHistoryData.length - idx;
+            const isLatest = idx === 0;
+            const isStart = pointNumber === 1;
+            const timeStr = p.updatedAt ? new Date(p.updatedAt).toLocaleString() : 'N/A';
+            const speedStr = p.speed ? `${(p.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
+            const accStr = p.accuracy ? `±${Math.round(p.accuracy)} m` : 'N/A';
+            const badgeClass = isLatest ? 'end' : isStart ? 'start' : 'point';
+            const badgeText = isLatest ? 'Latest' : isStart ? 'Start' : `#${pointNumber}`;
+
+            return `
+              <tr>
+                <td>
+                  <span class="history-marker-badge ${badgeClass}">${badgeText}</span>
+                </td>
+                <td style="white-space: nowrap;">
+                  <div>${timeStr}</div>
+                </td>
+                <td>
+                  <code style="color: #38bdf8; font-size: 0.8rem;">${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</code>
+                </td>
+                <td>${accStr}</td>
+                <td>${speedStr}</td>
+                <td style="text-align: right;">
+                  <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${p.latitude}, ${p.longitude}, '${timeStr}')" style="padding: 2px 8px; font-size: 0.75rem;">
+                    <i class="fa-solid fa-crosshairs"></i> Pan Map
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    console.error('History fetch error:', err);
+    container.innerHTML = `<div style="padding: 2rem; text-align: center; color: #f87171;">Network error loading history</div>`;
+  }
+}
+
+function closeUserHistoryModal() {
+  document.getElementById('userHistoryModal').classList.remove('active');
+}
+
+function reopenCurrentHistoryModal() {
+  if (currentHistoryUser) {
+    document.getElementById('userHistoryModal').classList.add('active');
+  }
+}
+
+function renderHistoryOnMapFromModal() {
+  closeUserHistoryModal();
+  if (!currentHistoryUser || !currentHistoryData || currentHistoryData.length === 0) {
+    showToast('No history points to display on map', 'info');
+    return;
+  }
+  drawHistoryRoute(currentHistoryUser, currentHistoryData);
+}
+
+function drawHistoryRoute(user, points) {
+  // Clear any existing history layers
+  clearHistoryRouteLayers();
+
+  historyMarkersLayer = L.layerGroup().addTo(map);
+
+  const latLngs = points.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]);
+
+  // Outer glow line
+  historyGlowPolyline = L.polyline(latLngs, {
+    color: '#38bdf8',
+    weight: 8,
+    opacity: 0.35,
+    lineJoin: 'round'
+  }).addTo(historyMarkersLayer);
+
+  // Core animated/dashed route line
+  historyPolyline = L.polyline(latLngs, {
+    color: '#4f46e5',
+    weight: 4,
+    opacity: 0.95,
+    dashArray: '8, 6',
+    lineJoin: 'round'
+  }).addTo(historyMarkersLayer);
+
+  // Start Pin (Green)
+  const startP = points[0];
+  const startIcon = L.divIcon({
+    className: 'custom-history-marker',
+    html: `<div class="history-pin start"><i class="fa-solid fa-flag"></i> Start</div>`,
+    iconSize: [60, 26],
+    iconAnchor: [30, 13]
+  });
+  L.marker([startP.latitude, startP.longitude], { icon: startIcon })
+    .addTo(historyMarkersLayer)
+    .bindPopup(`<b>Start Point</b><br>${startP.updatedAt ? new Date(startP.updatedAt).toLocaleString() : ''}`);
+
+  // End / Current Pin (Blue)
+  if (points.length > 1) {
+    const endP = points[points.length - 1];
+    const endIcon = L.divIcon({
+      className: 'custom-history-marker',
+      html: `<div class="history-pin end"><i class="fa-solid fa-location-dot"></i> Latest</div>`,
+      iconSize: [65, 26],
+      iconAnchor: [32, 13]
+    });
+    L.marker([endP.latitude, endP.longitude], { icon: endIcon })
+      .addTo(historyMarkersLayer)
+      .bindPopup(`<b>Latest Point</b><br>${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}`);
+  }
+
+  // Intermediate subtle waypoints
+  if (points.length > 2 && points.length <= 100) {
+    for (let i = 1; i < points.length - 1; i++) {
+      const p = points[i];
+      const timeStr = p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString() : 'N/A';
+      const speedStr = p.speed ? `${(p.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
+
+      L.circleMarker([p.latitude, p.longitude], {
+        radius: 4,
+        fillColor: '#818cf8',
+        color: '#ffffff',
+        weight: 1.5,
+        fillOpacity: 0.9
+      })
+      .addTo(historyMarkersLayer)
+      .bindPopup(`<b>Waypoint #${i + 1}</b><br>Time: ${timeStr}<br>Speed: ${speedStr}<br>Coords: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`);
+    }
+  }
+
+  // Fit bounds to the route
+  map.fitBounds(historyPolyline.getBounds().pad(0.2));
+
+  // Show notice banner
+  const notice = document.getElementById('historyModeNotice');
+  document.getElementById('historyNoticeUserName').innerText = user.name;
+  document.getElementById('historyNoticePointCount').innerText = points.length;
+  notice.style.display = 'flex';
+
+  showToast(`Displaying route trail for ${user.name} (${points.length} GPS points)`, 'success');
+}
+
+function clearHistoryRouteLayers() {
+  if (historyPolyline) {
+    map.removeLayer(historyPolyline);
+    historyPolyline = null;
+  }
+  if (historyGlowPolyline) {
+    map.removeLayer(historyGlowPolyline);
+    historyGlowPolyline = null;
+  }
+  if (historyMarkersLayer) {
+    map.removeLayer(historyMarkersLayer);
+    historyMarkersLayer = null;
+  }
+}
+
+function exitHistoryMode() {
+  clearHistoryRouteLayers();
+  const notice = document.getElementById('historyModeNotice');
+  if (notice) notice.style.display = 'none';
+  fitAllMarkers();
+  showToast('Exited history view. Showing live fleet.', 'info');
+}
+
+function locateHistoryPoint(lat, lng, label) {
+  closeUserHistoryModal();
+  map.flyTo([lat, lng], 17, { animate: true, duration: 1 });
+  L.popup()
+    .setLatLng([lat, lng])
+    .setContent(`<div style="font-size:12px; font-weight:600;">📍 Historical GPS Point<br><span style="color:#64748b; font-weight:normal;">${label}</span><br><code>${lat.toFixed(5)}, ${lng.toFixed(5)}</code></div>`)
+    .openOn(map);
+}
+
+function exportHistoryCsv() {
+  if (!currentHistoryData || currentHistoryData.length === 0) {
+    showToast('No history data to export', 'info');
+    return;
+  }
+
+  const userName = currentHistoryUser ? currentHistoryUser.name : 'user';
+  const headers = ['Point', 'User_ID', 'User_Name', 'Timestamp', 'Latitude', 'Longitude', 'Accuracy_meters', 'Speed_kmh'];
+  const rows = currentHistoryData.map((p, idx) => [
+    idx + 1,
+    `"${p.userId || ''}"`,
+    `"${userName.replace(/"/g, '""')}"`,
+    `"${p.updatedAt || ''}"`,
+    p.latitude,
+    p.longitude,
+    p.accuracy || '',
+    p.speed ? (p.speed * 3.6).toFixed(2) : 0
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${userName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_location_history.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast('Location history exported to CSV', 'success');
 }

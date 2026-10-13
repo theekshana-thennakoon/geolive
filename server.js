@@ -262,7 +262,8 @@ app.get('/api/user/:id', (req, res) => {
 // Get User History
 app.get('/api/user/:id/history', (req, res) => {
   try {
-    const history = db.getUserHistory(req.params.id, 50);
+    const limit = parseInt(req.query.limit) || 200;
+    const history = db.getUserHistory(req.params.id, limit);
     res.json({ success: true, history });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
