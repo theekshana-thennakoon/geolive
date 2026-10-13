@@ -246,12 +246,9 @@ function updateUserMarker(user) {
         <div><b>Speed:</b> ${speedStr}</div>
         <div><b>Last Updated:</b> ${lastSeenStr}</div>
       </div>
-      <div style="margin-top: 10px; display: flex; gap: 6px;">
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="flex:1; text-align:center; padding: 5px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600;">
-          Google Maps
-        </a>
-        <a href="/track?id=${user.id}" target="_blank" style="flex:1; text-align:center; padding: 5px; background: #374151; color: #fff; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600;">
-          Live URL
+      <div style="margin-top: 10px;">
+        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; text-align: center; padding: 6px 10px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps
         </a>
       </div>
     </div>
