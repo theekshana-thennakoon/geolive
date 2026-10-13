@@ -30,6 +30,7 @@ app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/user', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/track', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track.html')));
+app.get('/healthz', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 
 // ==========================================
 // REST API ROUTES

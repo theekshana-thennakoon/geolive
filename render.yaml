@@ -3,9 +3,13 @@ services:
     name: geolive-tracking
     runtime: node
     plan: free
+    region: singapore
     buildCommand: npm install
     startCommand: node server.js
+    healthCheckPath: /healthz
     envVars:
+      - key: NODE_VERSION
+        value: 20
       - key: PORT
         value: 10000
       - key: SMTP_GMAIL_USER
