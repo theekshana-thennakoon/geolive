@@ -8,6 +8,8 @@ let currentHistoryUser = null;
 let historyPolyline = null;
 let historyGlowPolyline = null;
 let historyMarkersLayer = null;
+let historyLatestMarker = null;
+let historyPollingTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAdminAuth();
@@ -295,6 +297,9 @@ function handleRealtimeLocation(user) {
   updateUserMarker(user);
   renderUsersList();
   updateMetrics();
+
+  // Live update if Location History modal or Map trail is active for this user
+  handleRealtimeHistoryUpdate(user);
 }
 
 function selectUser(userId) {
@@ -389,7 +394,7 @@ function showToast(message, type = 'info') {
 }
 
 // ==========================================
-// LOCATION HISTORY FEATURES (USER-WISE)
+// LOCATION HISTORY FEATURES (USER-WISE & REAL-TIME)
 // ==========================================
 
 async function openUserHistoryModal(userId) {
@@ -420,6 +425,9 @@ async function openUserHistoryModal(userId) {
 
   modal.classList.add('active');
 
+  // Start real-time background polling as safety alongside socket events
+  startHistoryPolling(userId);
+
   try {
     const res = await fetch(`/api/user/${userId}/history?limit=300`);
     const data = await res.json();
@@ -443,81 +451,249 @@ async function openUserHistoryModal(userId) {
 
     if (currentHistoryData.length === 0) {
       statLatest.innerText = 'No GPS recorded yet';
-      container.innerHTML = `
-        <div style="padding: 3rem 1.5rem; text-align: center; color: var(--text-muted);">
-          <i class="fa-solid fa-route" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 0.75rem;"></i>
-          <div style="font-weight: 600; font-size: 1rem; color: var(--text-main); margin-bottom: 0.25rem;">No Location History Available</div>
-          <div style="font-size: 0.825rem;">This user has not sent any GPS location updates yet.</div>
-        </div>
-      `;
+      renderHistoryTable([]);
       return;
     }
 
     const latest = currentHistoryData[currentHistoryData.length - 1];
     statLatest.innerText = `Latest: ${latest.updatedAt ? new Date(latest.updatedAt).toLocaleTimeString() : 'N/A'}`;
 
-    // Render table (newest first)
-    const reversedHistory = [...currentHistoryData].reverse();
-    container.innerHTML = `
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th style="width: 65px;">Point</th>
-            <th>Recorded Time</th>
-            <th>Coordinates</th>
-            <th>Accuracy</th>
-            <th>Speed</th>
-            <th style="text-align: right;">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${reversedHistory.map((p, idx) => {
-            const pointNumber = currentHistoryData.length - idx;
-            const isLatest = idx === 0;
-            const isStart = pointNumber === 1;
-            const timeStr = p.updatedAt ? new Date(p.updatedAt).toLocaleString() : 'N/A';
-            const speedStr = p.speed ? `${(p.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
-            const accStr = p.accuracy ? `±${Math.round(p.accuracy)} m` : 'N/A';
-            const badgeClass = isLatest ? 'end' : isStart ? 'start' : 'point';
-            const badgeText = isLatest ? 'Latest' : isStart ? 'Start' : `#${pointNumber}`;
-
-            return `
-              <tr>
-                <td>
-                  <span class="history-marker-badge ${badgeClass}">${badgeText}</span>
-                </td>
-                <td style="white-space: nowrap;">
-                  <div>${timeStr}</div>
-                </td>
-                <td>
-                  <code style="color: #38bdf8; font-size: 0.8rem;">${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</code>
-                </td>
-                <td>${accStr}</td>
-                <td>${speedStr}</td>
-                <td style="text-align: right;">
-                  <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${p.latitude}, ${p.longitude}, '${timeStr}')" style="padding: 2px 8px; font-size: 0.75rem;">
-                    <i class="fa-solid fa-crosshairs"></i> Pan Map
-                  </button>
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    `;
+    renderHistoryTable(currentHistoryData);
   } catch (err) {
     console.error('History fetch error:', err);
     container.innerHTML = `<div style="padding: 2rem; text-align: center; color: #f87171;">Network error loading history</div>`;
   }
 }
 
+function renderHistoryTable(points) {
+  const container = document.getElementById('historyListContainer');
+  if (!container) return;
+
+  if (!points || points.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 3rem 1.5rem; text-align: center; color: var(--text-muted);">
+        <i class="fa-solid fa-route" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 0.75rem;"></i>
+        <div style="font-weight: 600; font-size: 1rem; color: var(--text-main); margin-bottom: 0.25rem;">No Location History Available</div>
+        <div style="font-size: 0.825rem;">This user has not sent any GPS location updates yet.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const reversedHistory = [...points].reverse();
+  container.innerHTML = `
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th style="width: 65px;">Point</th>
+          <th>Recorded Time</th>
+          <th>Coordinates</th>
+          <th>Accuracy</th>
+          <th>Speed</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${reversedHistory.map((p, idx) => {
+          const pointNumber = points.length - idx;
+          const isLatest = idx === 0;
+          const isStart = pointNumber === 1;
+          const timeStr = p.updatedAt ? new Date(p.updatedAt).toLocaleString() : 'N/A';
+          const speedStr = p.speed ? `${(p.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
+          const accStr = p.accuracy ? `±${Math.round(p.accuracy)} m` : 'N/A';
+          const badgeClass = isLatest ? 'end' : isStart ? 'start' : 'point';
+          const badgeText = isLatest ? 'Latest' : isStart ? 'Start' : `#${pointNumber}`;
+
+          return `
+            <tr>
+              <td>
+                <span class="history-marker-badge ${badgeClass}">${badgeText}</span>
+              </td>
+              <td style="white-space: nowrap;">
+                <div>${timeStr}</div>
+              </td>
+              <td>
+                <code style="color: #38bdf8; font-size: 0.8rem;">${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</code>
+              </td>
+              <td>${accStr}</td>
+              <td>${speedStr}</td>
+              <td style="text-align: right;">
+                <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${p.latitude}, ${p.longitude}, '${timeStr}')" style="padding: 2px 8px; font-size: 0.75rem;">
+                  <i class="fa-solid fa-crosshairs"></i> Pan Map
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function handleRealtimeHistoryUpdate(user) {
+  if (!currentHistoryUser || currentHistoryUser.id !== user.id) return;
+  if (!user.location || !user.location.latitude) return;
+
+  const newLoc = {
+    userId: user.id,
+    latitude: parseFloat(user.location.latitude),
+    longitude: parseFloat(user.location.longitude),
+    accuracy: user.location.accuracy !== undefined ? parseFloat(user.location.accuracy) : null,
+    speed: user.location.speed !== undefined ? parseFloat(user.location.speed) : null,
+    heading: user.location.heading !== undefined ? parseFloat(user.location.heading) : null,
+    updatedAt: user.location.updatedAt || user.lastSeen || new Date().toISOString()
+  };
+
+  // Avoid inserting duplicate if same timestamp
+  const lastPoint = currentHistoryData[currentHistoryData.length - 1];
+  if (lastPoint && lastPoint.updatedAt === newLoc.updatedAt) {
+    return;
+  }
+
+  currentHistoryData.push(newLoc);
+
+  // 1. If Modal is active, update modal table and stats live
+  const modal = document.getElementById('userHistoryModal');
+  if (modal && modal.classList.contains('active')) {
+    updateHistoryModalLive(newLoc);
+  }
+
+  // 2. If map route is showing on map, update route live
+  if (historyPolyline) {
+    appendPointToMapRoute(newLoc);
+  }
+}
+
+function updateHistoryModalLive(newLoc) {
+  const statPoints = document.getElementById('historyStatPoints');
+  const statLatest = document.getElementById('historyStatLatestTime');
+  if (statPoints) statPoints.innerText = currentHistoryData.length;
+  if (statLatest) statLatest.innerText = `Latest: ${new Date(newLoc.updatedAt).toLocaleTimeString()}`;
+
+  const tbody = document.querySelector('#historyListContainer table.history-table tbody');
+  if (tbody) {
+    // Change previous #1 (now #2) badge from 'Latest' to its number
+    const firstRowBadge = tbody.querySelector('tr:first-child .history-marker-badge');
+    if (firstRowBadge) {
+      firstRowBadge.className = 'history-marker-badge point';
+      firstRowBadge.innerText = `#${currentHistoryData.length - 1}`;
+    }
+
+    const timeStr = new Date(newLoc.updatedAt).toLocaleString();
+    const speedStr = newLoc.speed ? `${(newLoc.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
+    const accStr = newLoc.accuracy ? `±${Math.round(newLoc.accuracy)} m` : 'N/A';
+
+    const newRow = document.createElement('tr');
+    newRow.style.animation = 'highlightRow 2s ease';
+    newRow.innerHTML = `
+      <td>
+        <span class="history-marker-badge end">Latest</span>
+      </td>
+      <td style="white-space: nowrap;">
+        <div>${timeStr}</div>
+      </td>
+      <td>
+        <code style="color: #38bdf8; font-size: 0.8rem;">${newLoc.latitude.toFixed(5)}, ${newLoc.longitude.toFixed(5)}</code>
+      </td>
+      <td>${accStr}</td>
+      <td>${speedStr}</td>
+      <td style="text-align: right;">
+        <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${newLoc.latitude}, ${newLoc.longitude}, '${timeStr}')" style="padding: 2px 8px; font-size: 0.75rem;">
+          <i class="fa-solid fa-crosshairs"></i> Pan Map
+        </button>
+      </td>
+    `;
+    tbody.prepend(newRow);
+  } else {
+    renderHistoryTable(currentHistoryData);
+  }
+}
+
+function appendPointToMapRoute(newLoc) {
+  if (historyPolyline) {
+    historyPolyline.addLatLng([newLoc.latitude, newLoc.longitude]);
+  }
+  if (historyGlowPolyline) {
+    historyGlowPolyline.addLatLng([newLoc.latitude, newLoc.longitude]);
+  }
+  if (historyLatestMarker) {
+    historyLatestMarker.setLatLng([newLoc.latitude, newLoc.longitude]);
+    historyLatestMarker.setPopupContent(`<b>Latest Point</b><br>${new Date(newLoc.updatedAt).toLocaleString()}`);
+  }
+  const noticeCount = document.getElementById('historyNoticePointCount');
+  if (noticeCount) noticeCount.innerText = currentHistoryData.length;
+}
+
+function startHistoryPolling(userId) {
+  stopHistoryPolling();
+  historyPollingTimer = setInterval(() => {
+    const modal = document.getElementById('userHistoryModal');
+    if (modal && modal.classList.contains('active') && currentHistoryUser && currentHistoryUser.id === userId) {
+      silentRefreshHistory(userId);
+    } else {
+      stopHistoryPolling();
+    }
+  }, 3500);
+}
+
+function stopHistoryPolling() {
+  if (historyPollingTimer) {
+    clearInterval(historyPollingTimer);
+    historyPollingTimer = null;
+  }
+}
+
+async function silentRefreshHistory(userId) {
+  try {
+    const res = await fetch(`/api/user/${userId}/history?limit=300`);
+    const data = await res.json();
+    if (data.success && data.history) {
+      const fetched = data.history;
+      if (fetched.length !== currentHistoryData.length) {
+        currentHistoryData = fetched;
+        const statPoints = document.getElementById('historyStatPoints');
+        const statLatest = document.getElementById('historyStatLatestTime');
+        if (statPoints) statPoints.innerText = currentHistoryData.length;
+        if (currentHistoryData.length > 0) {
+          const latest = currentHistoryData[currentHistoryData.length - 1];
+          if (statLatest) statLatest.innerText = `Latest: ${latest.updatedAt ? new Date(latest.updatedAt).toLocaleTimeString() : 'N/A'}`;
+        }
+        renderHistoryTable(currentHistoryData);
+
+        if (historyPolyline) {
+          drawHistoryRoute(currentHistoryUser, currentHistoryData, true);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Silent refresh history error:', e);
+  }
+}
+
+async function refreshCurrentHistoryModal(manual = false) {
+  if (!currentHistoryUser) return;
+  const icon = document.getElementById('historyRefreshIcon');
+  if (icon) icon.classList.add('fa-spin');
+
+  await silentRefreshHistory(currentHistoryUser.id);
+
+  if (icon) {
+    setTimeout(() => icon.classList.remove('fa-spin'), 500);
+  }
+  if (manual) {
+    showToast('Location history refreshed', 'info');
+  }
+}
+
 function closeUserHistoryModal() {
+  stopHistoryPolling();
   document.getElementById('userHistoryModal').classList.remove('active');
 }
 
 function reopenCurrentHistoryModal() {
   if (currentHistoryUser) {
     document.getElementById('userHistoryModal').classList.add('active');
+    startHistoryPolling(currentHistoryUser.id);
   }
 }
 
@@ -530,30 +706,39 @@ function renderHistoryOnMapFromModal() {
   drawHistoryRoute(currentHistoryUser, currentHistoryData);
 }
 
-function drawHistoryRoute(user, points) {
-  // Clear any existing history layers
-  clearHistoryRouteLayers();
+function drawHistoryRoute(user, points, isSilentUpdate = false) {
+  if (!isSilentUpdate) {
+    clearHistoryRouteLayers();
+  }
 
-  historyMarkersLayer = L.layerGroup().addTo(map);
+  if (!historyMarkersLayer) {
+    historyMarkersLayer = L.layerGroup().addTo(map);
+  }
 
   const latLngs = points.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]);
 
-  // Outer glow line
-  historyGlowPolyline = L.polyline(latLngs, {
-    color: '#38bdf8',
-    weight: 8,
-    opacity: 0.35,
-    lineJoin: 'round'
-  }).addTo(historyMarkersLayer);
+  if (!historyGlowPolyline) {
+    historyGlowPolyline = L.polyline(latLngs, {
+      color: '#38bdf8',
+      weight: 8,
+      opacity: 0.35,
+      lineJoin: 'round'
+    }).addTo(historyMarkersLayer);
+  } else {
+    historyGlowPolyline.setLatLngs(latLngs);
+  }
 
-  // Core animated/dashed route line
-  historyPolyline = L.polyline(latLngs, {
-    color: '#4f46e5',
-    weight: 4,
-    opacity: 0.95,
-    dashArray: '8, 6',
-    lineJoin: 'round'
-  }).addTo(historyMarkersLayer);
+  if (!historyPolyline) {
+    historyPolyline = L.polyline(latLngs, {
+      color: '#4f46e5',
+      weight: 4,
+      opacity: 0.95,
+      dashArray: '8, 6',
+      lineJoin: 'round'
+    }).addTo(historyMarkersLayer);
+  } else {
+    historyPolyline.setLatLngs(latLngs);
+  }
 
   // Start Pin (Green)
   const startP = points[0];
@@ -563,9 +748,11 @@ function drawHistoryRoute(user, points) {
     iconSize: [60, 26],
     iconAnchor: [30, 13]
   });
-  L.marker([startP.latitude, startP.longitude], { icon: startIcon })
-    .addTo(historyMarkersLayer)
-    .bindPopup(`<b>Start Point</b><br>${startP.updatedAt ? new Date(startP.updatedAt).toLocaleString() : ''}`);
+  if (!isSilentUpdate) {
+    L.marker([startP.latitude, startP.longitude], { icon: startIcon })
+      .addTo(historyMarkersLayer)
+      .bindPopup(`<b>Start Point</b><br>${startP.updatedAt ? new Date(startP.updatedAt).toLocaleString() : ''}`);
+  }
 
   // End / Current Pin (Blue)
   if (points.length > 1) {
@@ -576,40 +763,50 @@ function drawHistoryRoute(user, points) {
       iconSize: [65, 26],
       iconAnchor: [32, 13]
     });
-    L.marker([endP.latitude, endP.longitude], { icon: endIcon })
-      .addTo(historyMarkersLayer)
-      .bindPopup(`<b>Latest Point</b><br>${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}`);
-  }
-
-  // Intermediate subtle waypoints
-  if (points.length > 2 && points.length <= 100) {
-    for (let i = 1; i < points.length - 1; i++) {
-      const p = points[i];
-      const timeStr = p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString() : 'N/A';
-      const speedStr = p.speed ? `${(p.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
-
-      L.circleMarker([p.latitude, p.longitude], {
-        radius: 4,
-        fillColor: '#818cf8',
-        color: '#ffffff',
-        weight: 1.5,
-        fillOpacity: 0.9
-      })
-      .addTo(historyMarkersLayer)
-      .bindPopup(`<b>Waypoint #${i + 1}</b><br>Time: ${timeStr}<br>Speed: ${speedStr}<br>Coords: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`);
+    if (!historyLatestMarker) {
+      historyLatestMarker = L.marker([endP.latitude, endP.longitude], { icon: endIcon })
+        .addTo(historyMarkersLayer)
+        .bindPopup(`<b>Latest Point</b><br>${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}`);
+    } else {
+      historyLatestMarker.setLatLng([endP.latitude, endP.longitude]);
+      historyLatestMarker.setPopupContent(`<b>Latest Point</b><br>${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}`);
     }
   }
 
-  // Fit bounds to the route
-  map.fitBounds(historyPolyline.getBounds().pad(0.2));
+  if (!isSilentUpdate) {
+    // Intermediate subtle waypoints
+    if (points.length > 2 && points.length <= 100) {
+      for (let i = 1; i < points.length - 1; i++) {
+        const p = points[i];
+        const timeStr = p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString() : 'N/A';
+        const speedStr = p.speed ? `${(p.speed * 3.6).toFixed(1)} km/h` : '0 km/h';
+
+        L.circleMarker([p.latitude, p.longitude], {
+          radius: 4,
+          fillColor: '#818cf8',
+          color: '#ffffff',
+          weight: 1.5,
+          fillOpacity: 0.9
+        })
+        .addTo(historyMarkersLayer)
+        .bindPopup(`<b>Waypoint #${i + 1}</b><br>Time: ${timeStr}<br>Speed: ${speedStr}<br>Coords: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`);
+      }
+    }
+
+    map.fitBounds(historyPolyline.getBounds().pad(0.2));
+  }
 
   // Show notice banner
   const notice = document.getElementById('historyModeNotice');
-  document.getElementById('historyNoticeUserName').innerText = user.name;
-  document.getElementById('historyNoticePointCount').innerText = points.length;
-  notice.style.display = 'flex';
+  if (notice) {
+    document.getElementById('historyNoticeUserName').innerText = user.name;
+    document.getElementById('historyNoticePointCount').innerText = points.length;
+    notice.style.display = 'flex';
+  }
 
-  showToast(`Displaying route trail for ${user.name} (${points.length} GPS points)`, 'success');
+  if (!isSilentUpdate) {
+    showToast(`Displaying route trail for ${user.name} (${points.length} GPS points)`, 'success');
+  }
 }
 
 function clearHistoryRouteLayers() {
@@ -625,6 +822,7 @@ function clearHistoryRouteLayers() {
     map.removeLayer(historyMarkersLayer);
     historyMarkersLayer = null;
   }
+  historyLatestMarker = null;
 }
 
 function exitHistoryMode() {

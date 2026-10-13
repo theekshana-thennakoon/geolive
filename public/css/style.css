@@ -1130,3 +1130,8 @@ body {
   box-shadow: 0 0 6px rgba(168, 85, 247, 0.8);
 }
 
+@keyframes highlightRow {
+  0% { background: rgba(59, 130, 246, 0.4); }
+  100% { background: transparent; }
+}
+
