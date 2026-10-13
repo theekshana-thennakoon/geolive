@@ -79,11 +79,8 @@
       <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
         <div>
           <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
-            <h1 style="font-size: 1.5rem; font-weight: 800;">Real-Time Location Dashboard</h1>
-            <span class="badge badge-offline" id="liveBadge">
-              <span class="pulse-dot offline" id="liveDot"></span>
-              <span id="liveStatusText">Tracking Stopped</span>
-            </span>
+            <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0;">GeoLive Pro</h1>
+            <span class="pulse-dot offline" id="liveDot" title="Tracking Stopped" style="width: 14px; height: 14px;"></span>
           </div>
           <p style="color: var(--text-muted); font-size: 0.9rem;">
             Click the button below to detect your current position, stream live coordinates to Admin, and get your live shareable link.
@@ -122,14 +119,6 @@
 
     <!-- Live Stats Grid -->
     <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-label"><i class="fa-solid fa-location-pin"></i> Latitude</div>
-        <div class="stat-value" id="valLat">--</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label"><i class="fa-solid fa-location-pin"></i> Longitude</div>
-        <div class="stat-value" id="valLng">--</div>
-      </div>
       <div class="stat-box">
         <div class="stat-label"><i class="fa-solid fa-bullseye"></i> GPS Accuracy</div>
         <div class="stat-value" id="valAcc">--</div>

@@ -169,8 +169,10 @@ function updateDisplay(loc, forceCenter = false) {
   const lat = parseFloat(loc.latitude);
   const lng = parseFloat(loc.longitude);
 
-  document.getElementById('valLat').innerText = lat.toFixed(6);
-  document.getElementById('valLng').innerText = lng.toFixed(6);
+  const valLat = document.getElementById('valLat');
+  if (valLat) valLat.innerText = lat.toFixed(6);
+  const valLng = document.getElementById('valLng');
+  if (valLng) valLng.innerText = lng.toFixed(6);
   document.getElementById('valAcc').innerText = loc.accuracy ? `±${Math.round(loc.accuracy)} m` : 'N/A';
   document.getElementById('valSpeed').innerText = loc.speed ? `${(loc.speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
   document.getElementById('valTime').innerText = new Date(loc.updatedAt || Date.now()).toLocaleTimeString();
@@ -200,7 +202,7 @@ function updateDisplay(loc, forceCenter = false) {
 
   if (!userMarker) {
     userMarker = L.marker(latLng, { icon: customIcon }).addTo(map);
-    userMarker.bindPopup(`<b>${currentUser.name}</b><br>Live GPS Active<br>Lat: ${lat.toFixed(5)}<br>Lng: ${lng.toFixed(5)}`);
+    userMarker.bindPopup(`<b>${currentUser.name}</b><br>Live GPS Active`);
   } else {
     userMarker.setLatLng(latLng);
     userMarker.setIcon(customIcon);
@@ -247,13 +249,19 @@ function updateStatusUI(tracking) {
   const text = document.getElementById('liveStatusText');
 
   if (tracking) {
-    badge.className = 'badge badge-online';
-    dot.className = 'pulse-dot online';
-    text.innerText = 'Live Streaming Active';
+    if (badge) badge.className = 'badge badge-online';
+    if (dot) {
+      dot.className = 'pulse-dot online';
+      dot.title = 'Live Streaming Active';
+    }
+    if (text) text.innerText = 'Live Streaming Active';
   } else {
-    badge.className = 'badge badge-offline';
-    dot.className = 'pulse-dot offline';
-    text.innerText = 'Tracking Stopped';
+    if (badge) badge.className = 'badge badge-offline';
+    if (dot) {
+      dot.className = 'pulse-dot offline';
+      dot.title = 'Tracking Stopped';
+    }
+    if (text) text.innerText = 'Tracking Stopped';
   }
 }
 
