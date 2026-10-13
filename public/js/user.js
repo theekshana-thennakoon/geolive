@@ -14,7 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   currentUser = JSON.parse(cached);
-  document.getElementById('userNameBadge').innerHTML = `<i class="fa-solid fa-circle-user"></i> ${currentUser.name} (${currentUser.phone})`;
+  const nameBadgeEl = document.getElementById('userNameBadge');
+  if (nameBadgeEl) {
+    nameBadgeEl.title = `${currentUser.name} (${currentUser.phone})`;
+    nameBadgeEl.innerHTML = `<i class="fa-solid fa-circle-user"></i> <span class="badge-user-name">${currentUser.name}</span> <span class="badge-user-phone">(${currentUser.phone})</span>`;
+  }
   const userIdEl = document.getElementById('userIdCode');
   if (userIdEl) userIdEl.innerText = currentUser.id;
 

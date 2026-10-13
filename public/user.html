@@ -56,17 +56,17 @@
       <div class="brand-icon">
         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
       </div>
-      <span>GeoLive Pro</span>
+      <span>GeoLive <span class="brand-sub">Pro</span></span>
     </a>
     <div class="nav-links">
-      <span id="userNameBadge" style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
+      <span id="userNameBadge" class="user-badge">
         <i class="fa-solid fa-circle-user"></i> Loading...
       </span>
       <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Switch to Dark Mode">
         <i class="fa-solid fa-moon"></i>
       </button>
-      <button onclick="handleLogout()" class="btn btn-outline btn-sm">
-        <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+      <button onclick="handleLogout()" class="btn btn-outline btn-sm btn-logout" title="Logout">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="logout-text">Logout</span>
       </button>
     </div>
   </nav>
