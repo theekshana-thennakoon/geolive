@@ -357,6 +357,9 @@
     let googleClientId = '';
 
     // Load server config on startup
+    let tokenClient = null;
+    let currentGoogleMode = 'login';
+
     async function loadServerConfig() {
       try {
         const res = await fetch('/api/config');
@@ -371,12 +374,65 @@
     }
 
     function initGoogleGsi() {
-      if (typeof google !== 'undefined' && google.accounts && google.accounts.id && googleClientId) {
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleCredentialResponse,
-          auto_select: false
-        });
+      if (typeof google === 'undefined' || !google.accounts) {
+        setTimeout(initGoogleGsi, 300);
+        return;
+      }
+
+      // Initialize OAuth2 Token Client configured to ALWAYS show account chooser ("select_account")
+      if (google.accounts.oauth2 && googleClientId) {
+        try {
+          tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: googleClientId,
+            scope: 'email profile openid',
+            prompt: 'select_account',
+            callback: async (resp) => {
+              if (resp.error) {
+                console.warn('Google Auth popup closed or errored:', resp);
+                if (resp.error !== 'popup_closed_by_user') {
+                  openGoogleModal(currentGoogleMode);
+                }
+                return;
+              }
+              if (resp.access_token) {
+                try {
+                  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${resp.access_token}` }
+                  });
+                  const userinfo = await res.json();
+                  if (userinfo && userinfo.email) {
+                    await sendGoogleAuthToServer({
+                      name: userinfo.name || userinfo.given_name || userinfo.email.split('@')[0],
+                      email: userinfo.email,
+                      googleId: userinfo.sub,
+                      photoUrl: userinfo.picture || null
+                    });
+                  } else {
+                    showToast('Failed to retrieve Google profile', 'error');
+                  }
+                } catch (err) {
+                  console.error('Fetch userinfo error:', err);
+                  showToast('Error retrieving Google user data', 'error');
+                }
+              }
+            }
+          });
+        } catch (e) {
+          console.warn('OAuth2 token client init failed:', e);
+        }
+      }
+
+      // Also initialize ID library as secondary support
+      if (google.accounts.id && googleClientId) {
+        try {
+          google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false
+          });
+        } catch (e) {
+          console.warn('GSI ID init failed:', e);
+        }
       }
     }
 
@@ -412,7 +468,11 @@
     }
 
     function triggerGoogleAuth(mode) {
-      if (googleClientId && typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+      currentGoogleMode = mode;
+      if (tokenClient) {
+        // Explicitly triggers Google account chooser popup!
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+      } else if (googleClientId && typeof google !== 'undefined' && google.accounts && google.accounts.id) {
         google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
             openGoogleModal(mode);

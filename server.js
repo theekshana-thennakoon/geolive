@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -194,7 +195,7 @@ app.post('/api/auth/google', (req, res) => {
 // Public Config Endpoint
 app.get('/api/config', (req, res) => {
   res.json({
-    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '560374353058-v325fqaf0m4hpg2ogsbd5ectks42a9tn.apps.googleusercontent.com'
   });
 });
 
