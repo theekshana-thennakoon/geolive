@@ -91,6 +91,8 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-main);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   line-height: 1.5;
   background-image: 
     radial-gradient(at 0% 0%, var(--bg-gradient-1) 0px, transparent 50%),
@@ -521,12 +523,19 @@ body {
 }
 
 /* Admin Dashboard Layout */
+body.admin-page-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: 360px 1fr;
   gap: 1.5rem;
   padding: 1.5rem 2rem;
-  height: calc(100vh - 75px);
+  flex: 1;
+  min-height: 0;
 }
 
 .admin-sidebar {
@@ -1133,5 +1142,33 @@ body {
 @keyframes highlightRow {
   0% { background: rgba(59, 130, 246, 0.4); }
   100% { background: transparent; }
+}
+
+/* App Footer */
+.app-footer {
+  margin-top: auto;
+  padding: 1.15rem 1.5rem;
+  background: var(--navbar-bg);
+  backdrop-filter: var(--backdrop);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+  z-index: 10;
+}
+
+.app-footer .footer-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.app-footer .footer-author {
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
