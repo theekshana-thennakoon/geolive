@@ -517,10 +517,15 @@ function renderHistoryTable(points) {
               </td>
               <td>${accStr}</td>
               <td>${speedStr}</td>
-              <td style="text-align: right;">
-                <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${p.latitude}, ${p.longitude}, '${timeStr}')" style="padding: 2px 8px; font-size: 0.75rem;">
-                  <i class="fa-solid fa-crosshairs"></i> Pan Map
-                </button>
+              <td style="text-align: right; white-space: nowrap;">
+                <div style="display: inline-flex; gap: 4px; justify-content: flex-end;">
+                  <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${p.latitude}, ${p.longitude}, '${timeStr}')" style="padding: 2px 7px; font-size: 0.725rem;" title="Pan to point on map">
+                    <i class="fa-solid fa-crosshairs"></i> Pan
+                  </button>
+                  <a href="https://www.google.com/maps?q=${p.latitude},${p.longitude}" target="_blank" class="btn btn-primary btn-sm" style="padding: 2px 7px; font-size: 0.725rem; text-decoration: none;" title="Open point in Google Maps">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Map
+                  </a>
+                </div>
               </td>
             </tr>
           `;
@@ -597,10 +602,15 @@ function updateHistoryModalLive(newLoc) {
       </td>
       <td>${accStr}</td>
       <td>${speedStr}</td>
-      <td style="text-align: right;">
-        <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${newLoc.latitude}, ${newLoc.longitude}, '${timeStr}')" style="padding: 2px 8px; font-size: 0.75rem;">
-          <i class="fa-solid fa-crosshairs"></i> Pan Map
-        </button>
+      <td style="text-align: right; white-space: nowrap;">
+        <div style="display: inline-flex; gap: 4px; justify-content: flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="locateHistoryPoint(${newLoc.latitude}, ${newLoc.longitude}, '${timeStr}')" style="padding: 2px 7px; font-size: 0.725rem;" title="Pan to point on map">
+            <i class="fa-solid fa-crosshairs"></i> Pan
+          </button>
+          <a href="https://www.google.com/maps?q=${newLoc.latitude},${newLoc.longitude}" target="_blank" class="btn btn-primary btn-sm" style="padding: 2px 7px; font-size: 0.725rem; text-decoration: none;" title="Open point in Google Maps">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Map
+          </a>
+        </div>
       </td>
     `;
     tbody.prepend(newRow);
@@ -751,7 +761,18 @@ function drawHistoryRoute(user, points, isSilentUpdate = false) {
   if (!isSilentUpdate) {
     L.marker([startP.latitude, startP.longitude], { icon: startIcon })
       .addTo(historyMarkersLayer)
-      .bindPopup(`<b>Start Point</b><br>${startP.updatedAt ? new Date(startP.updatedAt).toLocaleString() : ''}`);
+      .bindPopup(`
+        <div style="font-size:12px; font-family:inherit; min-width:160px; line-height:1.5;">
+          <b style="color:#10b981;">🟢 Route Start Point</b><br>
+          <span style="color:#94a3b8; font-size:11px;">${startP.updatedAt ? new Date(startP.updatedAt).toLocaleString() : ''}</span><br>
+          <code style="color:#38bdf8;">${startP.latitude.toFixed(5)}, ${startP.longitude.toFixed(5)}</code>
+          <div style="margin-top:6px;">
+            <a href="https://www.google.com/maps?q=${startP.latitude},${startP.longitude}" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:4px; padding:4px 8px; background:#2563eb; color:#fff; text-decoration:none; border-radius:4px; font-size:11px; font-weight:600;">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps
+            </a>
+          </div>
+        </div>
+      `);
   }
 
   // End / Current Pin (Blue)
@@ -763,13 +784,25 @@ function drawHistoryRoute(user, points, isSilentUpdate = false) {
       iconSize: [65, 26],
       iconAnchor: [32, 13]
     });
+    const latestPopupContent = `
+      <div style="font-size:12px; font-family:inherit; min-width:160px; line-height:1.5;">
+        <b style="color:#3b82f6;">🔵 Route Latest Point</b><br>
+        <span style="color:#94a3b8; font-size:11px;">${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}</span><br>
+        <code style="color:#38bdf8;">${endP.latitude.toFixed(5)}, ${endP.longitude.toFixed(5)}</code>
+        <div style="margin-top:6px;">
+          <a href="https://www.google.com/maps?q=${endP.latitude},${endP.longitude}" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:4px; padding:4px 8px; background:#2563eb; color:#fff; text-decoration:none; border-radius:4px; font-size:11px; font-weight:600;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps
+          </a>
+        </div>
+      </div>
+    `;
     if (!historyLatestMarker) {
       historyLatestMarker = L.marker([endP.latitude, endP.longitude], { icon: endIcon })
         .addTo(historyMarkersLayer)
-        .bindPopup(`<b>Latest Point</b><br>${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}`);
+        .bindPopup(latestPopupContent);
     } else {
       historyLatestMarker.setLatLng([endP.latitude, endP.longitude]);
-      historyLatestMarker.setPopupContent(`<b>Latest Point</b><br>${endP.updatedAt ? new Date(endP.updatedAt).toLocaleString() : ''}`);
+      historyLatestMarker.setPopupContent(latestPopupContent);
     }
   }
 
@@ -789,7 +822,18 @@ function drawHistoryRoute(user, points, isSilentUpdate = false) {
           fillOpacity: 0.9
         })
         .addTo(historyMarkersLayer)
-        .bindPopup(`<b>Waypoint #${i + 1}</b><br>Time: ${timeStr}<br>Speed: ${speedStr}<br>Coords: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`);
+        .bindPopup(`
+          <div style="font-size:12px; font-family:inherit; min-width:160px; line-height:1.5;">
+            <b>Waypoint #${i + 1}</b><br>
+            <span style="color:#94a3b8; font-size:11px;">Time: ${timeStr} | Speed: ${speedStr}</span><br>
+            <code style="color:#38bdf8;">${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</code>
+            <div style="margin-top:6px;">
+              <a href="https://www.google.com/maps?q=${p.latitude},${p.longitude}" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:4px; padding:4px 8px; background:#2563eb; color:#fff; text-decoration:none; border-radius:4px; font-size:11px; font-weight:600;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps
+              </a>
+            </div>
+          </div>
+        `);
       }
     }
 
@@ -836,9 +880,19 @@ function exitHistoryMode() {
 function locateHistoryPoint(lat, lng, label) {
   closeUserHistoryModal();
   map.flyTo([lat, lng], 17, { animate: true, duration: 1 });
+  const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
   L.popup()
     .setLatLng([lat, lng])
-    .setContent(`<div style="font-size:12px; font-weight:600;">📍 Historical GPS Point<br><span style="color:#64748b; font-weight:normal;">${label}</span><br><code>${lat.toFixed(5)}, ${lng.toFixed(5)}</code></div>`)
+    .setContent(`
+      <div style="font-size:12px; font-family:inherit; min-width:180px; line-height:1.5;">
+        <div style="font-weight:700; margin-bottom:2px;">📍 Historical GPS Point</div>
+        <div style="color:var(--text-muted); font-size:11px; margin-bottom:4px;">${label}</div>
+        <div style="margin-bottom:8px;"><code style="color:#38bdf8; font-size:11px;">${lat.toFixed(5)}, ${lng.toFixed(5)}</code></div>
+        <a href="${mapsUrl}" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:5px; width:100%; padding:5px 8px; background:#2563eb; color:#fff; text-decoration:none; border-radius:6px; font-size:11px; font-weight:600;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Google Maps
+        </a>
+      </div>
+    `)
     .openOn(map);
 }
 
