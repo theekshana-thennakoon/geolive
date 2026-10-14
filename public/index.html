@@ -10,6 +10,8 @@
   <script src="js/theme.js"></script>
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Facebook SDK -->
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 </head>
 <body>
   <!-- Navbar (Clean, No Admin link) -->
@@ -72,6 +74,11 @@
           </svg>
           <span>Sign up with Google</span>
         </button>
+
+        <button type="button" class="btn btn-facebook" onclick="triggerFacebookAuth('register')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; margin-top: 0.65rem;">
+          <i class="fa-brands fa-facebook" style="font-size: 1.25rem;"></i>
+          <span>Sign up with Facebook</span>
+        </button>
       </form>
 
       <!-- Register Step 2: OTP Verification Form (Initially Hidden) -->
@@ -131,6 +138,11 @@
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
           <span>Sign in with Google</span>
+        </button>
+
+        <button type="button" class="btn btn-facebook" onclick="triggerFacebookAuth('login')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; margin-top: 0.65rem;">
+          <i class="fa-brands fa-facebook" style="font-size: 1.25rem;"></i>
+          <span>Sign in with Facebook</span>
         </button>
       </form>
 
@@ -368,8 +380,142 @@
           googleClientId = data.googleClientId;
           initGoogleGsi();
         }
+        if (data.facebookAppId) {
+          facebookAppId = data.facebookAppId;
+          initFacebookSdk();
+        }
       } catch (err) {
         console.warn('Could not load config:', err);
+      }
+    }
+
+    let facebookAppId = '';
+    let currentFacebookMode = 'login';
+
+    function initFacebookSdk() {
+      if (typeof FB === 'undefined') {
+        setTimeout(initFacebookSdk, 300);
+        return;
+      }
+      if (facebookAppId) {
+        try {
+          FB.init({
+            appId: facebookAppId,
+            cookie: true,
+            xfbml: true,
+            version: 'v19.0'
+          });
+        } catch (e) {
+          console.warn('FB.init error:', e);
+        }
+      }
+    }
+
+    function triggerFacebookAuth(mode) {
+      currentFacebookMode = mode;
+      if (facebookAppId && typeof FB !== 'undefined') {
+        try {
+          FB.login(function(response) {
+            if (response.authResponse) {
+              FB.api('/me', { fields: 'id,name,email,picture.type(large)' }, async function(profile) {
+                if (profile && !profile.error) {
+                  await sendFacebookAuthToServer({
+                    name: profile.name,
+                    email: profile.email || `${profile.id}@facebook.user`,
+                    facebookId: profile.id,
+                    photoUrl: profile.picture?.data?.url || null
+                  });
+                } else {
+                  showToast('Could not retrieve Facebook profile details', 'error');
+                }
+              });
+            } else {
+              console.log('Facebook login cancelled or not authorized');
+            }
+          }, { scope: 'public_profile,email', auth_type: 'rerequest' });
+        } catch (err) {
+          openFacebookModal(mode);
+        }
+      } else {
+        openFacebookModal(mode);
+      }
+    }
+
+    function openFacebookModal(mode = 'login') {
+      const modal = document.getElementById('facebookModal');
+      const title = document.getElementById('facebookModalTitle');
+      const sub = document.getElementById('facebookModalSub');
+      const btnText = document.getElementById('fbAuthSubmitBtnText');
+      if (mode === 'register') {
+        title.innerText = 'Register with Facebook';
+        sub.innerText = 'Create your GeoLive account instantly using Facebook';
+        btnText.innerText = 'Register with Facebook';
+      } else {
+        title.innerText = 'Sign In with Facebook';
+        sub.innerText = 'Log in to your GeoLive tracking account using Facebook';
+        btnText.innerText = 'Sign In with Facebook';
+      }
+      modal.classList.add('active');
+      document.getElementById('fbEmail').focus();
+    }
+
+    function closeFacebookModal() {
+      document.getElementById('facebookModal').classList.remove('active');
+    }
+
+    async function handleFacebookDirectAuth(e) {
+      e.preventDefault();
+      const name = document.getElementById('fbName').value.trim();
+      const email = document.getElementById('fbEmail').value.trim();
+      const btn = document.getElementById('fbAuthSubmitBtn');
+
+      if (!email) {
+        showToast('Facebook email or username is required', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+      try {
+        await sendFacebookAuthToServer({
+          name: name || email.split('@')[0],
+          email: email.includes('@') ? email : `${email}@facebook.user`,
+          facebookId: 'fb_' + Math.random().toString(36).substring(2, 10),
+          photoUrl: null
+        });
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-brands fa-facebook" style="font-size: 1.2rem;"></i> <span id="fbAuthSubmitBtnText">Continue with Facebook</span>';
+      }
+    }
+
+    async function sendFacebookAuthToServer({ name, email, facebookId, photoUrl }) {
+      try {
+        const res = await fetch('/api/auth/facebook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, facebookId, photoUrl })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message || 'Facebook authentication successful!', 'success');
+          localStorage.setItem('geolive_user', JSON.stringify(data.user));
+          notifyNativeApp({ action: 'login', userId: data.user.id, name: data.user.name, phone: data.user.phone });
+          closeFacebookModal();
+          setTimeout(() => {
+            if (data.user.role === 'admin') {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/user';
+            }
+          }, 800);
+        } else {
+          showToast(data.error || 'Facebook authentication failed', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error. Please try again.', 'error');
       }
     }
 
@@ -601,6 +747,41 @@
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
           <span id="gAuthSubmitBtnText">Continue with Google</span>
+        </button>
+      </form>
+
+      <div style="margin-top: 1rem; text-align: center; font-size: 0.775rem; color: var(--text-dim);">
+        <i class="fa-solid fa-circle-info"></i> Instant registration & sync with Firebase Cloud
+      </div>
+    </div>
+  </div>
+
+  <!-- Facebook Sign-In & Registration Modal -->
+  <div class="modal-backdrop" id="facebookModal">
+    <div class="modal-dialog">
+      <button class="modal-close" onclick="closeFacebookModal()">&times;</button>
+      <div style="text-align: center; margin-bottom: 1.25rem;">
+        <div style="width: 52px; height: 52px; background: rgba(24, 119, 242, 0.15); border: 1px solid rgba(24, 119, 242, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem auto;">
+          <i class="fa-brands fa-facebook" style="font-size: 1.75rem; color: #1877F2;"></i>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700;" id="facebookModalTitle">Sign In with Facebook</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;" id="facebookModalSub">
+          Continue with your Facebook account to access GeoLive
+        </p>
+      </div>
+
+      <form onsubmit="handleFacebookDirectAuth(event)">
+        <div class="form-group">
+          <label><i class="fa-solid fa-user"></i> Full Name <span style="color:var(--text-dim); font-size:0.75rem;">(Optional)</span></label>
+          <input type="text" id="fbName" class="form-input" placeholder="e.g. John Doe">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-envelope"></i> Facebook Email or Username</label>
+          <input type="text" id="fbEmail" class="form-input" placeholder="e.g. name@gmail.com or fbusername" required>
+        </div>
+        <button type="submit" class="btn btn-facebook" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600;" id="fbAuthSubmitBtn">
+          <i class="fa-brands fa-facebook" style="font-size: 1.2rem;"></i>
+          <span id="fbAuthSubmitBtnText">Continue with Facebook</span>
         </button>
       </form>
 

@@ -323,6 +323,19 @@ body {
   color: #111827;
 }
 
+.btn-facebook {
+  background: #1877F2;
+  color: #ffffff;
+  border: 1px solid #1877F2;
+  box-shadow: 0 2px 8px rgba(24, 119, 242, 0.25);
+}
+.btn-facebook:hover {
+  background: #166fe5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(24, 119, 242, 0.4);
+  color: #ffffff;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

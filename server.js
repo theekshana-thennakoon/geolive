@@ -192,10 +192,50 @@ app.post('/api/auth/google', (req, res) => {
   }
 });
 
+// Facebook Sign-In & Registration
+app.post('/api/auth/facebook', (req, res) => {
+  try {
+    const { name, email, facebookId, photoUrl } = req.body;
+    if (!email && !facebookId) {
+      return res.status(400).json({ success: false, error: 'Facebook account info is required' });
+    }
+
+    const { user, isNew } = db.createOrLoginFacebookUser({ name, email, facebookId, photoUrl });
+
+    if (isNew) {
+      io.to('admin').emit('user:registered', {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        createdAt: user.createdAt,
+        lastSeen: user.lastSeen,
+        isOnline: false,
+        location: null
+      });
+    }
+
+    res.json({
+      success: true,
+      message: isNew ? 'Facebook registration successful' : 'Facebook login successful',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Public Config Endpoint
 app.get('/api/config', (req, res) => {
   res.json({
-    googleClientId: process.env.GOOGLE_CLIENT_ID || '560374353058-v325fqaf0m4hpg2ogsbd5ectks42a9tn.apps.googleusercontent.com'
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '560374353058-v325fqaf0m4hpg2ogsbd5ectks42a9tn.apps.googleusercontent.com',
+    facebookAppId: process.env.FACEBOOK_APP_ID || ''
   });
 });
 

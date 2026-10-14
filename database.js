@@ -168,6 +168,49 @@ const db = {
     return { user: newUser, isNew: true };
   },
 
+  createOrLoginFacebookUser({ name, email = null, facebookId = null, photoUrl = null }) {
+    const data = loadDB();
+    const effectiveEmail = email ? email.trim().toLowerCase() : (facebookId ? `${facebookId}@facebook.user` : null);
+    if (!effectiveEmail && !facebookId) throw new Error('Facebook account email or ID is required');
+
+    // Find by facebookId or email
+    const userIndex = data.users.findIndex(u => 
+      (facebookId && u.facebookId === facebookId) ||
+      (effectiveEmail && u.email && u.email.toLowerCase() === effectiveEmail)
+    );
+
+    if (userIndex !== -1) {
+      const existing = data.users[userIndex];
+      existing.lastSeen = new Date().toISOString();
+      if (facebookId) existing.facebookId = facebookId;
+      if (photoUrl) existing.photoUrl = photoUrl;
+      saveDB(data);
+      firebase.saveUser(existing).catch(err => console.error('Firebase sync error:', err));
+      return { user: existing, isNew: false };
+    }
+
+    const displayName = (name || effectiveEmail.split('@')[0]).trim();
+    const newUser = {
+      id: crypto.randomUUID(),
+      name: displayName,
+      email: effectiveEmail,
+      phone: displayName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) || 'fbuser',
+      passwordHash: null,
+      facebookId,
+      photoUrl,
+      role: 'user',
+      authProvider: 'facebook',
+      createdAt: new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+      location: null
+    };
+
+    data.users.push(newUser);
+    saveDB(data);
+    firebase.saveUser(newUser).catch(err => console.error('Firebase sync error:', err));
+    return { user: newUser, isNew: true };
+  },
+
   verifyPassword(user, password) {
     if (!user.passwordHash) return false;
     return bcrypt.compareSync(password, user.passwordHash);
