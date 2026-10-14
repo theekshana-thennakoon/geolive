@@ -561,17 +561,47 @@ body.admin-page-body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 100%;
+  height: calc(100vh - 120px);
+  max-height: calc(100vh - 120px);
+  position: sticky;
+  top: 75px;
+}
+
+.admin-sidebar > div:first-child,
+.admin-sidebar > div:nth-child(2) {
+  flex-shrink: 0;
 }
 
 .admin-users-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  margin-top: 1rem;
+  overflow-x: hidden;
+  margin-top: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding-right: 4px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+.admin-users-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-users-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.admin-users-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+}
+
+.admin-users-list::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 .user-card {
@@ -732,7 +762,14 @@ body.admin-page-body {
   
   .admin-sidebar {
     height: auto;
-    max-height: 400px;
+    max-height: 460px;
+    position: static;
+  }
+
+  .admin-users-list {
+    max-height: 330px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .admin-map-container {
